@@ -1,7 +1,11 @@
 from datetime import datetime
+import logging
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app.models import db
+
+# 設定 logger
+logger = logging.getLogger(__name__)
 
 class User(db.Model, UserMixin):
     """
@@ -21,7 +25,7 @@ class User(db.Model, UserMixin):
 
     def set_password(self, password):
         """加密並設定密碼"""
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
     def check_password(self, password):
         """檢查密碼是否正確"""
@@ -32,64 +36,96 @@ class User(db.Model, UserMixin):
     @classmethod
     def create(cls, username, email, password, role):
         """
-        註冊新使用者
+        註冊新使用者，若發生資料庫錯誤則自動進行 Rollback
         """
-        user = cls(
-            username=username,
-            email=email,
-            role=role
-        )
-        user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        return user
+        try:
+            user = cls(
+                username=username,
+                email=email,
+                role=role
+            )
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+            return user
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"建立使用者失敗: {str(e)}")
+            raise e
 
     @classmethod
     def get_by_id(cls, user_id):
         """
         依 ID 查詢使用者
         """
-        return cls.query.get(int(user_id))
+        try:
+            return cls.query.get(int(user_id))
+        except Exception as e:
+            logger.error(f"依 ID 查詢使用者失敗 (ID: {user_id}): {str(e)}")
+            return None
 
     @classmethod
     def get_by_username(cls, username):
         """
         依使用者名稱查詢使用者 (登入驗證時使用)
         """
-        return cls.query.filter_by(username=username).first()
+        try:
+            return cls.query.filter_by(username=username).first()
+        except Exception as e:
+            logger.error(f"依帳號查詢使用者失敗 (Username: {username}): {str(e)}")
+            return None
 
     @classmethod
     def get_by_email(cls, email):
         """
         依 Email 查詢使用者
         """
-        return cls.query.filter_by(email=email).first()
+        try:
+            return cls.query.filter_by(email=email).first()
+        except Exception as e:
+            logger.error(f"依 Email 查詢使用者失敗 (Email: {email}): {str(e)}")
+            return None
 
     @classmethod
     def get_all(cls):
         """
         取得所有使用者列表
         """
-        return cls.query.all()
+        try:
+            return cls.query.all()
+        except Exception as e:
+            logger.error(f"查詢所有使用者失敗: {str(e)}")
+            return []
 
     def update(self, **kwargs):
         """
-        更新使用者資料
+        更新使用者資料，若失敗則進行 Rollback
         """
-        for key, value in kwargs.items():
-            if key == 'password':
-                self.set_password(value)
-            elif hasattr(self, key):
-                setattr(self, key, value)
-        db.session.commit()
-        return self
+        try:
+            for key, value in kwargs.items():
+                if key == 'password':
+                    self.set_password(value)
+                elif hasattr(self, key):
+                    setattr(self, key, value)
+            db.session.commit()
+            return self
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"更新使用者資料失敗 (ID: {self.id}): {str(e)}")
+            raise e
 
     def delete(self):
         """
-        刪除使用者帳號
+        刪除使用者帳號，若失敗則進行 Rollback
         """
-        db.session.delete(self)
-        db.session.commit()
+        try:
+            db.session.delete(self)
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"刪除使用者失敗 (ID: {self.id}): {str(e)}")
+            raise e
 
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"

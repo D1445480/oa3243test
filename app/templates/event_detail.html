@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} - 校園活動詳情{% endblock %}
+
+{% block content %}
+<!-- 麵包屑導覽 -->
+<nav aria-label="breadcrumb" class="mb-4" id="detailBreadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-info text-decoration-none">活動看板</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">活動詳情</li>
+    </ol>
+</nav>
+
+<div class="row g-4" id="detailGrid">
+    <!-- 左側：活動內容與描述 -->
+    <div class="col-lg-8" id="detailLeft">
+        <div class="glass-panel p-5 h-100 position-relative" id="detailContentCard">
+            <!-- 活動分類與狀態 -->
+            <div class="mb-3" id="detailCategoryBlock">
+                <span class="card-category-badge {{ event.category }}" id="detailCategoryBadge">
+                    {% if event.category == 'lecture' %}學術講座
+                    {% elif event.category == 'club' %}社團招生
+                    {% elif event.category == 'competition' %}競賽活動
+                    {% elif event.category == 'job' %}校內工讀
+                    {% else %}學校公告
+                    {% endif %}
+                </span>
+                
+                <span class="badge {% if event.status == 'ongoing' %}bg-success{% elif event.status == 'upcoming' %}bg-info text-dark{% else %}bg-secondary{% endif %} ms-2 p-2" style="font-size: 0.8rem;" id="detailStatusBadge">
+                    {% if event.status == 'ongoing' %}進行中
+                    {% elif event.status == 'upcoming' %}即將開始
+                    {% else %}已結束
+                    {% endif %}
+                </span>
+            </div>
+            
+            <!-- 活動標題 -->
+            <h1 class="display-6 fw-bold mb-4" id="detailTitle">{{ event.title }}</h1>
+            
+            <!-- 活動介紹 -->
+            <h2 class="h5 fw-bold text-info border-bottom border-secondary pb-2 mb-3" id="introHeading">活動介紹</h2>
+            <div class="text-light-muted mb-5" style="line-height: 1.8; white-space: pre-wrap;" id="detailDescription">
+                {{ event.description or "主辦單位尚未提供此活動的詳細內容介紹。" }}
+            </div>
+            
+            <!-- 報名連結 -->
+            {% if event.registration_link %}
+                <div class="p-4 rounded-3 text-center mb-4" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2);" id="registerBox">
+                    <h3 class="h6 text-light mb-3 fw-bold" id="registerTitle">此活動需要提前報名，請點擊下方按鈕前往報名網頁：</h3>
+                    <a href="{{ event.registration_link }}" target="_blank" class="btn btn-premium px-5" id="registerBtn">
+                        <i class="bi bi-box-arrow-up-right me-2"></i>前往報名外部網站
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- 右側：時間地點與操作控制面版 -->
+    <div class="col-lg-4" id="detailRight">
+        <!-- 資訊小面板 -->
+        <div class="glass-panel p-4 mb-4" id="infoPanel">
+            <h3 class="h5 fw-bold text-info border-bottom border-secondary pb-2 mb-3" id="infoHeading">活動資訊</h3>
+            
+            <div class="meta-item py-2" id="infoStartTime">
+                <i class="bi bi-calendar-check-fill text-info" style="font-size: 1.2rem;"></i>
+                <div>
+                    <div class="small text-muted">開始時間</div>
+                    <div class="fw-semibold text-light">{{ event.start_time.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+            </div>
+            
+            <div class="meta-item py-2" id="infoEndTime">
+                <i class="bi bi-calendar-x-fill text-info" style="font-size: 1.2rem;"></i>
+                <div>
+                    <div class="small text-muted">結束時間</div>
+                    <div class="fw-semibold text-light">{{ event.end_time.strftime('%Y-%m-%d %H:%M') }}</div>
+                </div>
+            </div>
+            
+            <div class="meta-item py-2" id="infoLocation">
+                <i class="bi bi-geo-alt-fill text-info" style="font-size: 1.2rem;"></i>
+                <div>
+                    <div class="small text-muted">活動地點</div>
+                    <div class="fw-semibold text-light">{{ event.location }}</div>
+                </div>
+            </div>
+            
+            <div class="meta-item py-2" id="infoOrganizer">
+                <i class="bi bi-patch-check-fill text-info" style="font-size: 1.2rem;"></i>
+                <div>
+                    <div class="small text-muted">發布主辦單位</div>
+                    <div class="fw-semibold text-light">{{ event.organizer.username }}</div>
+                </div>
+            </div>
+            
+            {% if event.contact_info %}
+                <div class="meta-item py-2" id="infoContact">
+                    <i class="bi bi-telephone-fill text-info" style="font-size: 1.2rem;"></i>
+                    <div>
+                        <div class="small text-muted">聯絡方式</div>
+                        <div class="fw-semibold text-light">{{ event.contact_info }}</div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- 操作控制面板 -->
+        <div class="glass-panel p-4" id="controlPanel">
+            <h3 class="h5 fw-bold text-light mb-3" id="controlHeading">操作設定</h3>
+            
+            <!-- 學生收藏控制按鈕 -->
+            {% if not current_user.is_authenticated or current_user.role == 'student' %}
+                <div class="d-grid" id="studentFavBlock">
+                    <button class="btn btn-fav-toggle w-100 btn-glass py-3 d-flex align-items-center justify-content-center gap-2 {% if is_favorited %}favorited{% endif %}"
+                            data-event-id="{{ event.id }}"
+                            style="position: static; border-radius: 12px;"
+                            id="detailFavBtn">
+                        <i class="bi {% if is_favorited %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                        <span id="detailFavText">{% if is_favorited %}已收藏此活動{% else %}加入收藏清單{% endif %}</span>
+                    </button>
+                </div>
+            {% endif %}
+            
+            <!-- 主辦單位管理控制按鈕 (限自己發布的活動) -->
+            {% if current_user.is_authenticated and current_user.role == 'organizer' and event.organizer_id == current_user.id %}
+                <div class="d-flex flex-column gap-2" id="organizerControlBlock">
+                    <a href="{{ url_for('event.edit', event_id=event.id) }}" class="btn btn-premium w-100 py-2" id="editEventBtn">
+                        <i class="bi bi-pencil-square me-1"></i>編輯活動資訊
+                    </a>
+                    
+                    <form action="{{ url_for('event.delete', event_id=event.id) }}" method="POST" onsubmit="return confirm('確定要永久刪除並下架此活動嗎？這項操作無法復原。');" id="deleteForm">
+                        <button type="submit" class="btn btn-danger w-100 py-2 border-0" style="border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: #fca5a5; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(239, 68, 68, 0.4)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.2)'" id="deleteEventBtn">
+                            <i class="bi bi-trash3 me-1"></i>刪除下架活動
+                        </button>
+                    </form>
+                </div>
+            {% elif current_user.is_authenticated and current_user.role == 'organizer' %}
+                <div class="alert alert-secondary mb-0 small p-3 text-center" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05);" id="orgOtherAlert">
+                    <i class="bi bi-info-circle me-1"></i>此活動非您所發布，您無權進行修改。
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 在詳細頁面中，點擊收藏時一併動態更新按鈕底下的文字標題
+    document.addEventListener("DOMContentLoaded", () => {
+        const detailFavBtn = document.getElementById("detailFavBtn");
+        const detailFavText = document.getElementById("detailFavText");
+        
+        if (detailFavBtn && detailFavText) {
+            detailFavBtn.addEventListener("click", () => {
+                // 等待 AJAX 邏輯執行完成後，觀察 button.favorited 類別變化
+                // 由於 AJAX 是非同步的，此處延時一小段時間檢查類別
+                setTimeout(() => {
+                    if (detailFavBtn.classList.contains("favorited")) {
+                        detailFavText.textContent = "已收藏此活動";
+                    } else {
+                        detailFavText.textContent = "加入收藏清單";
+                    }
+                }, 100);
+            });
+        }
+    });
+</script>
+{% endblock %}

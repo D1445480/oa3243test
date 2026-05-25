@@ -1,29 +1,61 @@
-from flask import Blueprint, render_template, request
+import logging
+from flask import Blueprint, render_template, request, abort
+from flask_login import current_user
 from app.models.event import Event
+from app.models.favorite import Favorite
+
+# 設定 logger
+logger = logging.getLogger(__name__)
 
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
     """
-    [GET] 首頁活動看板 (templates/index.html)
-    
-    處理邏輯：
-    1. 接收查詢參數：category (分類篩選)、q (關鍵字搜尋)。
-    2. 呼叫 Event.get_all(category, search_query) 取得篩選後的活動。
-    3. 渲染 index.html，傳入活動清單與當前搜尋條件。
+    [GET] 首頁活動看板，顯示所有活動列表並支援分類篩選與關鍵字搜尋
     """
-    pass
+    category = request.args.get('category', '').strip()
+    search_query = request.args.get('q', '').strip()
+
+    try:
+        # 獲取篩選後的活動清單
+        events = Event.get_all(category=category or None, search_query=search_query or None)
+        
+        # 獲取目前學生的收藏清單，以便在卡片上正確渲染「愛心」狀態
+        fav_event_ids = set()
+        if current_user.is_authenticated and current_user.role == 'student':
+            fav_events = Favorite.get_by_user(current_user.id)
+            fav_event_ids = {e.id for e in fav_events if e is not None}
+            
+        return render_template(
+            'index.html', 
+            events=events, 
+            category=category, 
+            search_query=search_query,
+            fav_event_ids=fav_event_ids
+        )
+    except Exception as e:
+        logger.error(f"載入首頁失敗: {str(e)}")
+        # 若是重大異常，直接渲染空白頁面或回傳 Error 資訊
+        return render_template('index.html', events=[], category='', search_query='', fav_event_ids=set())
+
 
 @main_bp.route('/event/detail/<int:event_id>')
 def event_detail(event_id):
     """
-    [GET] 活動詳情頁面 (templates/event_detail.html)
-    
-    處理邏輯：
-    1. 呼叫 Event.get_by_id(event_id) 查詢活動。
-    2. 若活動不存在，回傳 404 錯誤頁面。
-    3. 查詢目前登入使用者是否已收藏此活動，將 is_favorited 狀態傳給模板。
-    4. 渲染 event_detail.html。
+    [GET] 顯示單一活動的詳細資訊頁面
     """
-    pass
+    try:
+        event = Event.get_by_id(event_id)
+        if not event:
+            abort(404)
+
+        # 判斷登入學生是否已收藏此活動
+        is_favorited = False
+        if current_user.is_authenticated and current_user.role == 'student':
+            is_favorited = Favorite.is_favorited(current_user.id, event_id)
+
+        return render_template('event_detail.html', event=event, is_favorited=is_favorited)
+    except Exception as e:
+        logger.error(f"載入活動詳情頁出錯 (ID: {event_id}): {str(e)}")
+        abort(500)

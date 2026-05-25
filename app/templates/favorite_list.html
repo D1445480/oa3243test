@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}我的收藏 - 校園活動資訊整合平台{% endblock %}
+
+{% block content %}
+<div class="row mb-4" id="favListHeaderRow">
+    <div class="col">
+        <h1 class="display-6 fw-bold" id="favListHeading">
+            <i class="bi bi-heart-fill text-danger me-2"></i>我的收藏活動
+        </h1>
+        <p class="text-muted" id="favListSubheading">這裡記錄了您收藏的所有校園活動，方便您隨時追蹤與參與。</p>
+    </div>
+</div>
+
+{% if events %}
+    <!-- 收藏活動網格清單 -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="favGrid">
+        {% for event in events %}
+            <div class="col event-card-col" id="event-col-{{ event.id }}">
+                <div class="card glass-panel event-card {{ event.category }}" id="event-card-{{ event.id }}">
+                    <!-- 異步收藏切換按鈕 (已收藏狀態) -->
+                    <button class="btn-fav-toggle favorited" 
+                            data-event-id="{{ event.id }}" 
+                            title="取消收藏" 
+                            aria-label="取消收藏活動"
+                            id="favBtn-{{ event.id }}">
+                        <i class="bi bi-heart-fill"></i>
+                    </button>
+                    
+                    <div class="card-body p-4 d-flex flex-column h-100" id="cardBody-{{ event.id }}">
+                        <!-- 分類標籤 -->
+                        <div>
+                            <span class="card-category-badge" id="badge-{{ event.id }}">
+                                {% if event.category == 'lecture' %}學術講座
+                                {% elif event.category == 'club' %}社團招生
+                                {% elif event.category == 'competition' %}競賽活動
+                                {% elif event.category == 'job' %}校內工讀
+                                {% else %}學校公告
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <!-- 活動名稱 -->
+                        <h3 class="card-title h5 mb-3 fw-bold" id="title-{{ event.id }}">
+                            <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="text-decoration-none text-light link-info">
+                                {{ event.title }}
+                            </a>
+                        </h3>
+                        
+                        <!-- 活動時間與資訊 -->
+                        <div class="mt-auto" id="meta-{{ event.id }}">
+                            <div class="meta-item" id="time-{{ event.id }}">
+                                <i class="bi bi-calendar-event"></i>
+                                <span>{{ event.start_time.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                            <div class="meta-item" id="location-{{ event.id }}">
+                                <i class="bi bi-geo-alt"></i>
+                                <span class="text-truncate">{{ event.location }}</span>
+                            </div>
+                            <div class="meta-item" id="organizer-{{ event.id }}">
+                                <i class="bi bi-patch-check"></i>
+                                <span class="text-truncate">{{ event.organizer.username }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 詳情按鈕 -->
+                        <div class="d-grid mt-4" id="action-{{ event.id }}">
+                            <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="btn btn-glass btn-sm" id="detailBtn-{{ event.id }}">
+                                <i class="bi bi-info-circle me-1"></i>查看詳情
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <!-- 尚無收藏活動時的空狀態 (Empty State) -->
+    <div class="row justify-content-center my-5" id="emptyRow">
+        <div class="col-md-6" id="emptyCol">
+            <div class="glass-panel empty-state p-5" id="emptyPanel">
+                <i class="bi bi-heartbreak text-muted mb-4" style="font-size: 5rem; display: inline-block;"></i>
+                <h2 class="h4 fw-bold mb-3" id="emptyTitle">您目前尚未收藏任何活動</h2>
+                <p class="text-muted mb-4" id="emptyText">當您在首頁瀏覽到感興趣的講座、社團活動或工讀資訊時，點擊活動卡片右上角的愛心，就能把活動收藏在這裡喔！</p>
+                <a href="{{ url_for('main.index') }}" class="btn btn-premium" id="goHomeBtn">
+                    <i class="bi bi-compass me-1"></i>去活動看板逛逛
+                </a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

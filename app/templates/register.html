@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}註冊帳號 - 校園活動資訊整合平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;" id="registerRow">
+    <div class="col-md-6 col-lg-5" id="registerCol">
+        <div class="glass-panel p-5" id="registerCard">
+            <!-- 標題 -->
+            <div class="text-center mb-4" id="registerHeader">
+                <i class="bi bi-person-plus-fill text-info" style="font-size: 3rem;"></i>
+                <h1 class="h3 fw-bold mt-2" id="registerTitle">建立您的帳號</h1>
+                <p class="text-muted" id="registerSubtext">加入平台，掌握校園最新活動或開始宣傳！</p>
+            </div>
+            
+            <!-- 表單 -->
+            <form action="{{ url_for('auth.register') }}" method="POST" id="registerForm">
+                <!-- 帳號 -->
+                <div class="mb-3" id="groupUsername">
+                    <label for="username" class="form-label text-light fw-medium">使用者帳號</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control bg-transparent border-secondary text-light" id="username" name="username" placeholder="請輸入學號或常用帳號" required>
+                    </div>
+                </div>
+                
+                <!-- Email -->
+                <div class="mb-3" id="groupEmail">
+                    <label for="email" class="form-label text-light fw-medium">電子郵件 (Email)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="bi bi-envelope"></i></span>
+                        <input type="email" class="form-control bg-transparent border-secondary text-light" id="email" name="email" placeholder="example@mail.com" required>
+                    </div>
+                </div>
+                
+                <!-- 密碼 -->
+                <div class="mb-3" id="groupPassword">
+                    <label for="password" class="form-label text-light fw-medium">密碼</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control bg-transparent border-secondary text-light" id="password" name="password" placeholder="請輸入安全密碼" required>
+                    </div>
+                </div>
+                
+                <!-- 角色選擇 -->
+                <div class="mb-4" id="groupRole">
+                    <label class="form-label text-light fw-medium d-block">我是...</label>
+                    <div class="d-flex gap-4">
+                        <div class="form-check" id="checkStudent">
+                            <input class="form-check-input" type="radio" name="role" id="roleStudent" value="student" checked>
+                            <label class="form-check-label text-light" for="roleStudent">
+                                <i class="bi bi-mortarboard me-1 text-primary"></i>一般學生 (可瀏覽/收藏活動)
+                            </label>
+                        </div>
+                        <div class="form-check" id="checkOrganizer">
+                            <input class="form-check-input" type="radio" name="role" id="roleOrganizer" value="organizer">
+                            <label class="form-check-label text-light" for="roleOrganizer">
+                                <i class="bi bi-building me-1 text-purple" style="color: #a855f7;"></i>活動主辦單位 (可發布與管理活動)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 註冊按鈕 -->
+                <div class="d-grid gap-2 mb-3" id="groupSubmit">
+                    <button type="submit" class="btn btn-premium" id="submitRegisterBtn">註冊並登入</button>
+                </div>
+                
+                <!-- 已有帳號連結 -->
+                <div class="text-center mt-3" id="registerFooter">
+                    <span class="text-muted">已經有帳號了嗎？</span>
+                    <a href="{{ url_for('auth.login') }}" class="text-info text-decoration-none fw-semibold ms-1" id="loginRedirect">點此登入</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

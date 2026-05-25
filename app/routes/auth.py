@@ -1,5 +1,10 @@
+import logging
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_user, logout_user, login_required, current_user
+from app.models.user import User
+
+# 設定 logger
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -7,41 +12,99 @@ auth_bp = Blueprint('auth', __name__)
 def register():
     """
     [GET] 顯示註冊表單頁面 (templates/register.html)
-    [POST] 接收表單欄位：username, email, password, role，並呼叫 User.create 建立帳號
-    
-    處理邏輯：
-    1. 驗證必填欄位與格式是否正確。
-    2. 檢查 username 與 email 是否已被註冊。
-    3. 成功後設定 flash 訊息並重導向至 /auth/login。
-    4. 失敗時顯示錯誤並重新渲染註冊頁。
+    [POST] 接收表單欄位，建立使用者帳號
     """
-    pass
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        role = request.form.get('role', 'student')
+
+        # 欄位驗證
+        if not username or not email or not password or not role:
+            flash('所有欄位皆為必填。', 'danger')
+            return render_template('register.html'), 400
+
+        if role not in ['student', 'organizer']:
+            flash('不合法的使用者角色。', 'danger')
+            return render_template('register.html'), 400
+
+        try:
+            # 檢查帳號重複
+            if User.get_by_username(username):
+                flash('此帳號已被註冊。', 'warning')
+                return render_template('register.html'), 400
+
+            if User.get_by_email(email):
+                flash('此 Email 已被註冊。', 'warning')
+                return render_template('register.html'), 400
+
+            # 建立使用者
+            User.create(username=username, email=email, password=password, role=role)
+            flash('註冊成功！請登入帳號。', 'success')
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            logger.error(f"註冊出錯: {str(e)}")
+            flash('系統錯誤，註冊失敗。請稍後再試。', 'danger')
+            return render_template('register.html'), 500
+
+    return render_template('register.html')
+
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """
     [GET] 顯示登入表單頁面 (templates/login.html)
-    [POST] 接收表單欄位：username, password，並驗證密碼
-    
-    處理邏輯：
-    1. 查詢使用者是否存在。
-    2. 驗證密碼雜湊。
-    3. 驗證成功使用 login_user(user) 建立登入 Session，並依角色重導向：
-       - 'student': 重導向至首頁 '/'
-       - 'organizer': 重導向至管理後台 '/event/manage'
-    4. 驗證失敗顯示錯誤並重新渲染登入頁。
+    [POST] 驗證登入資訊並建立 Session
     """
-    pass
+    if current_user.is_authenticated:
+        if current_user.role == 'organizer':
+            return redirect(url_for('event.manage'))
+        return redirect(url_for('main.index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        if not username or not password:
+            flash('請輸入帳號與密碼。', 'danger')
+            return render_template('login.html'), 400
+
+        try:
+            user = User.get_by_username(username)
+            if not user or not user.check_password(password):
+                flash('帳號或密碼錯誤。', 'danger')
+                return render_template('login.html'), 401
+
+            # 登入成功，建立 Session
+            login_user(user)
+            flash(f'登入成功，歡迎回來 {user.username}！', 'success')
+            
+            # 依角色導向不同頁面
+            if user.role == 'organizer':
+                return redirect(url_for('event.manage'))
+            return redirect(url_for('main.index'))
+        except Exception as e:
+            logger.error(f"登入出錯: {str(e)}")
+            flash('登入過程中發生系統錯誤，請稍後再試。', 'danger')
+            return render_template('login.html'), 500
+
+    return render_template('login.html')
+
 
 @auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
     """
-    [POST] 登出當前帳號
-    
-    處理邏輯：
-    1. 呼叫 logout_user() 清除 Session。
-    2. 設定 flash 成功訊息。
-    3. 重導向至首頁 '/'。
+    [POST] 登出邏輯
     """
-    pass
+    try:
+        logout_user()
+        flash('您已成功登出。', 'success')
+    except Exception as e:
+        logger.error(f"登出出錯: {str(e)}")
+        flash('登出失敗。', 'danger')
+    return redirect(url_for('main.index'))

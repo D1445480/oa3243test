@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if event and event.id %}編輯活動 - 校園活動資訊整合平台{% else %}發布活動 - 校園活動資訊整合平台{% endif %}
+{% endblock %}
+
+{% block content %}
+<!-- 麵包屑導覽 -->
+<nav aria-label="breadcrumb" class="mb-4" id="publishBreadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}" class="text-info text-decoration-none">首頁</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('event.manage') }}" class="text-info text-decoration-none">管理後台</a></li>
+        <li class="breadcrumb-item active text-muted" aria-current="page">
+            {% if event and event.id %}編輯活動{% else %}發布新活動{% endif %}
+        </li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center" id="publishRow">
+    <div class="col-lg-8" id="publishCol">
+        <div class="glass-panel p-5" id="publishCard">
+            <!-- 標題 -->
+            <div class="mb-4 border-bottom border-secondary pb-3" id="publishHeader">
+                <h1 class="h2 fw-bold" id="publishTitle">
+                    <i class="bi {% if event and event.id %}bi-pencil-square text-warning{% else %}bi-plus-circle-fill text-success{% endif %} me-2"></i>
+                    {% if event and event.id %}編輯活動資訊{% else %}發布新的校園活動{% endif %}
+                </h1>
+                <p class="text-muted" id="publishSubtext">請填寫下方活動表單，發布後全校學生即可在活動看板中瀏覽並收藏您的活動。</p>
+            </div>
+            
+            <!-- 表單 (動態變更 Action 路由) -->
+            <form action="{% if event and event.id %}{{ url_for('event.edit', event_id=event.id) }}{% else %}{{ url_for('event.publish') }}{% endif %}" method="POST" id="publishForm">
+                
+                <!-- 活動名稱 -->
+                <div class="mb-3" id="pubGroupTitle">
+                    <label for="title" class="form-label text-light fw-medium">活動名稱 <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control bg-transparent border-secondary text-light" id="title" name="title" placeholder="例如：第十屆校園金韶獎歌唱大賽" value="{% if event %}{{ event.title }}{% endif %}" required>
+                </div>
+                
+                <!-- 活動分類與地點 -->
+                <div class="row g-3 mb-3" id="pubGroupCategoryLocation">
+                    <div class="col-md-6" id="pubColCategory">
+                        <label for="category" class="form-label text-light fw-medium">活動類別 <span class="text-danger">*</span></label>
+                        <select class="form-select bg-transparent border-secondary text-light" id="category" name="category" required style="background-color: #1e293b;">
+                            <option value="" disabled {% if not event %}selected{% endif %}>請選擇活動性質</option>
+                            <option value="lecture" {% if event and event.category == 'lecture' %}selected{% endif %}>學術講座</option>
+                            <option value="club" {% if event and event.category == 'club' %}selected{% endif %}>社團招生</option>
+                            <option value="competition" {% if event and event.category == 'competition' %}selected{% endif %}>競賽活動</option>
+                            <option value="job" {% if event and event.category == 'job' %}selected{% endif %}>校內工讀</option>
+                            <option value="announcement" {% if event and event.category == 'announcement' %}selected{% endif %}>學校公告</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6" id="pubColLocation">
+                        <label for="location" class="form-label text-light fw-medium">活動地點 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control bg-transparent border-secondary text-light" id="location" name="location" placeholder="例如：體育館 B1 / 線上 MS Teams" value="{% if event %}{{ event.location }}{% endif %}" required>
+                    </div>
+                </div>
+                
+                <!-- 活動開始與結束時間 -->
+                <div class="row g-3 mb-3" id="pubGroupTimes">
+                    <div class="col-md-6" id="pubColStartTime">
+                        <label for="start_time" class="form-label text-light fw-medium">開始日期與時間 <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control bg-transparent border-secondary text-light" id="start_time" name="start_time" value="{% if event and event.start_time %}{{ event.start_time.strftime('%Y-%m-%dT%H:%M') }}{% elif event and event.get %}{{ event.get('start_time', '') }}{% endif %}" required>
+                    </div>
+                    <div class="col-md-6" id="pubColEndTime">
+                        <label for="end_time" class="form-label text-light fw-medium">結束日期與時間 <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control bg-transparent border-secondary text-light" id="end_time" name="end_time" value="{% if event and event.end_time %}{{ event.end_time.strftime('%Y-%m-%dT%H:%M') }}{% elif event and event.get %}{{ event.get('end_time', '') }}{% endif %}" required>
+                    </div>
+                </div>
+                
+                <!-- 活動介紹 -->
+                <div class="mb-3" id="pubGroupDesc">
+                    <label for="description" class="form-label text-light fw-medium">活動詳細介紹</label>
+                    <textarea class="form-control bg-transparent border-secondary text-light" id="description" name="description" rows="6" placeholder="請詳細說明活動內容、參加資格、費用等詳細資訊...">{% if event %}{{ event.description or '' }}{% endif %}</textarea>
+                </div>
+                
+                <!-- 外部報名連結與聯絡方式 -->
+                <div class="row g-3 mb-4" id="pubGroupLinksContact">
+                    <div class="col-md-6" id="pubColRegLink">
+                        <label for="registration_link" class="form-label text-light fw-medium">報名表單連結</label>
+                        <input type="url" class="form-control bg-transparent border-secondary text-light" id="registration_link" name="registration_link" placeholder="https://forms.gle/..." value="{% if event %}{{ event.registration_link or '' }}{% endif %}">
+                        <div class="form-text text-muted small">若此活動不需提前報名，可留空不填。</div>
+                    </div>
+                    <div class="col-md-6" id="pubColContact">
+                        <label for="contact_info" class="form-label text-light fw-medium">聯絡人與聯絡資訊</label>
+                        <input type="text" class="form-control bg-transparent border-secondary text-light" id="contact_info" name="contact_info" placeholder="例如：張同學 0912-345678 / line-id" value="{% if event %}{{ event.contact_info or '' }}{% endif %}">
+                    </div>
+                </div>
+                
+                <!-- 送出按鈕與取消 -->
+                <div class="d-flex justify-content-end gap-3" id="pubGroupButtons">
+                    <a href="{% if event and event.id %}{{ url_for('event.manage') }}{% else %}{{ url_for('main.index') }}{% endif %}" class="btn btn-glass" id="pubCancelBtn">
+                        取消
+                    </a>
+                    <button type="submit" class="btn btn-premium px-4" id="pubSubmitBtn">
+                        {% if event and event.id %}儲存修改資訊{% else %}確認發布活動{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
