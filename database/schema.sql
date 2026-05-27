@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(120) NOT NULL UNIQUE,
     password_hash VARCHAR(256) NOT NULL,
     role VARCHAR(20) DEFAULT 'student',
+    phone VARCHAR(20) DEFAULT NULL,
+    receive_sms BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

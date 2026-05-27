@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}會員登入 - 校園活動資訊整合平台{% endblock %}
+
+{% block content %}
+<div class="form-container" id="login-container">
+    <h2 class="form-title">登入帳號</h2>
+    
+    <form action="{{ url_for('auth.login') }}" method="POST" id="login-form">
+        <!-- Email -->
+        <div class="form-group">
+            <label for="email" class="form-label">電子信箱</label>
+            <input type="email" name="email" id="email" class="form-control" placeholder="example@school.edu.tw" required>
+        </div>
+        
+        <!-- Password -->
+        <div class="form-group">
+            <label for="password" class="form-label">密碼</label>
+            <input type="password" name="password" id="password" class="form-control" placeholder="請輸入密碼" required>
+        </div>
+        
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;" id="login-submit-btn">登入平台</button>
+    </form>
+    
+    <div class="form-footer">
+        還沒有帳號？ <a href="{{ url_for('auth.register') }}" id="link-to-register">立刻註冊一個</a>
+    </div>
+</div>
+{% endblock %}

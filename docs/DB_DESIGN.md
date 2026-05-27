@@ -12,6 +12,8 @@ erDiagram
         string email
         string password_hash
         string role "預設為 student"
+        string phone "允許為 NULL"
+        boolean receive_sms "預設為 0 (不訂閱)"
         datetime created_at
     }
     
@@ -55,6 +57,8 @@ erDiagram
 - `email` (VARCHAR(120)): 必填，唯一值，作為登入帳號。
 - `password_hash` (VARCHAR(256)): 必填，加密後的密碼。
 - `role` (VARCHAR(20)): 使用者身分，預設為 `student`，主辦單位可為 `organizer`。
+- `phone` (VARCHAR(20)): 選填，使用者聯絡手機，用於簡訊通知。
+- `receive_sms` (BOOLEAN): 是否訂閱簡訊通知，預設為 0 (代表不訂閱)。
 - `created_at` (DATETIME): 帳號建立時間。
 
 ### 2.2 categories (活動分類)

@@ -33,7 +33,8 @@ flowchart LR
     N -->|否| O[重導向至登入頁]
     N -->|是| P[填寫活動資訊表單]
     P --> Q[送出並發布成功]
-    Q --> B
+    Q --> R[系統背景發送簡訊給已訂閱之使用者]
+    R --> B
 ```
 
 ---
@@ -67,6 +68,9 @@ sequenceDiagram
     Model-->>Route: 資料庫操作完成
     deactivate Model
     
+    %% 新增簡訊通知流程
+    Route->>Route: 查詢已訂閱且有電話號碼之使用者
+    Note over Route: 觸發簡訊通知服務 (Console/Twilio)
     Route-->>Browser: HTTP 302 Redirect (重導向至首頁或列表頁)
     deactivate Route
     

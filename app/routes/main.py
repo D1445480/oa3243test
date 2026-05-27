@@ -1,4 +1,6 @@
 from flask import Blueprint, render_template
+from app.models import Event, Category
+from datetime import datetime
 
 main_bp = Blueprint('main', __name__)
 
@@ -6,10 +8,14 @@ main_bp = Blueprint('main', __name__)
 def index():
     """
     處理首頁請求
-    
-    邏輯：
-    1. 取得即將到來的最新活動 (最多 6 筆)
-    2. 取得所有分類 (供導覽列使用)
-    3. 渲染 index.html
     """
-    pass
+    # 取得最新即將舉辦的 6 筆活動 (活動時間大於等於今天，依日期升序排序)
+    upcoming_events = Event.query.filter(
+        Event.event_date >= datetime.utcnow()
+    ).order_by(Event.event_date.asc()).limit(6).all()
+    
+    # 取得所有分類供首頁導覽使用
+    categories = Category.query.all()
+    
+    return render_template('index.html', events=upcoming_events, categories=categories)
+
