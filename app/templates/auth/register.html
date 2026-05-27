@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}會員註冊 - 校園活動資訊整合平台{% endblock %}
+
+{% block content %}
+<div class="form-container" id="register-container">
+    <h2 class="form-title">註冊新帳號</h2>
+    
+    <form action="{{ url_for('auth.register') }}" method="POST" id="register-form">
+        <!-- Username -->
+        <div class="form-group">
+            <label for="username" class="form-label">使用者名稱 / 單位組織名稱 <span style="color: var(--accent);">*</span></label>
+            <input type="text" name="username" id="username" class="form-control" placeholder="例如：王小明 或 學生會活動組" required>
+        </div>
+        
+        <!-- Email -->
+        <div class="form-group">
+            <label for="email" class="form-label">電子信箱 (將作為登入帳號) <span style="color: var(--accent);">*</span></label>
+            <input type="email" name="email" id="email" class="form-control" placeholder="example@school.edu.tw" required>
+        </div>
+        
+        <!-- Password -->
+        <div class="form-group">
+            <label for="password" class="form-label">設定密碼 <span style="color: var(--accent);">*</span></label>
+            <input type="password" name="password" id="password" class="form-control" placeholder="請輸入安全密碼" required>
+        </div>
+        
+        <!-- Role -->
+        <div class="form-group">
+            <label for="role" class="form-label">註冊身分 <span style="color: var(--accent);">*</span></label>
+            <select name="role" id="role" class="form-control" style="background-color: #161c2d;" required>
+                <option value="student">學生 (可瀏覽與收藏活動，接收簡訊)</option>
+                <option value="organizer">活動主辦單位 (可發布與管理活動)</option>
+            </select>
+        </div>
+        
+        <!-- Phone (NEW SMS Notification Field) -->
+        <div class="form-group" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px; margin-top: 20px;">
+            <label for="phone" class="form-label">手機號碼 <span style="color: var(--text-muted); font-weight: normal;">(選填，用於最新活動簡訊通知)</span></label>
+            <input type="tel" name="phone" id="phone" class="form-control" placeholder="例如：0912345678" pattern="^09\d{8}$" title="請輸入格式正確的台灣手機號碼 (如: 0912345678)">
+            <small style="color: var(--text-secondary); display: block; margin-top: 5px; font-size: 12px;">※ 我們不會將您的電話洩露給外部機構，僅用於活動推播。</small>
+        </div>
+        
+        <!-- Receive SMS Toggle (NEW SMS Subscription Checkbox) -->
+        <div class="form-group form-checkbox-group">
+            <input type="checkbox" name="receive_sms" id="receive_sms" class="form-checkbox" value="y">
+            <label for="receive_sms" class="checkbox-label">
+                🔔 我願意訂閱「最新活動簡訊通知」，即時收到最火熱的活動簡訊通知。
+            </label>
+        </div>
+        
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;" id="register-submit-btn">建立新帳號</button>
+    </form>
+    
+    <div class="form-footer">
+        已有帳號了？ <a href="{{ url_for('auth.login') }}" id="link-to-login">立刻登入</a>
+    </div>
+</div>
+
+<script>
+    // 依身分自動勾選或限制簡訊設定的貼心前端互動
+    const roleSelect = document.getElementById('role');
+    const smsCheckbox = document.getElementById('receive_sms');
+    const phoneInput = document.getElementById('phone');
+    
+    roleSelect.addEventListener('change', function() {
+        if (this.value === 'organizer') {
+            smsCheckbox.checked = false;
+        } else {
+            smsCheckbox.checked = true;
+        }
+    });
+
+    // 手機號碼若有填寫，自動開啟訂閱選項
+    phoneInput.addEventListener('input', function() {
+        if (this.value.trim().length > 0) {
+            smsCheckbox.checked = true;
+        }
+    });
+</script>
+{% endblock %}

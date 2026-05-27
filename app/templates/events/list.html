@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}活動總覽 - 校園活動資訊整合平台{% endblock %}
+
+{% block content %}
+<section style="margin-bottom: 40px;">
+    {% if query %}
+        <h2 style="font-size: 28px; margin-bottom: 10px;">🔍 搜尋結果</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 25px;">關於關鍵字 「<span style="color: var(--primary); font-weight: 600;">{{ query }}</span>」 的搜尋結果，共找到 {{ events|length }} 筆活動：</p>
+    {% elif selected_category %}
+        <h2 style="font-size: 28px; margin-bottom: 10px;">📁 分類活動列表</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 25px;">分類：「<span style="color: var(--secondary); font-weight: 600;">{{ selected_category.name }}</span>」 下的活動，共找到 {{ events|length }} 筆活動：</p>
+    {% else %}
+        <h2 style="font-size: 28px; margin-bottom: 10px;">📅 所有校園活動</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 25px;">探索目前所有發布在平台上的精彩校園活動：</p>
+    {% endif %}
+</section>
+
+<!-- Search and Category Filters -->
+<section class="search-filter-section" id="list-filter-section" style="margin-bottom: 40px; padding-bottom: 25px; border-bottom: 1px solid var(--border-color);">
+    <form action="{{ url_for('events.search_events') }}" method="GET" class="search-form" id="list-search-form">
+        <input type="text" name="q" placeholder="搜尋活動名稱、關鍵字..." class="search-input" value="{{ query or '' }}" id="list-search-input-box" required>
+        <button type="submit" class="btn btn-primary search-btn" id="list-search-submit-btn">🔍 搜尋</button>
+    </form>
+
+    <div class="category-tags" id="list-category-pills">
+        <a href="{{ url_for('events.list_events') }}" class="tag {% if not selected_category %}active{% endif %}" id="list-tag-all">全部類別</a>
+        {% for cat in categories %}
+            <a href="{{ url_for('events.list_events', category=cat.id) }}" class="tag {% if selected_category and selected_category.id == cat.id %}active{% endif %}" id="list-tag-cat-{{ cat.id }}">{{ cat.name }}</a>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Events Grid -->
+{% if events %}
+    <div class="events-grid" id="list-events-grid-box">
+        {% for event in events %}
+            <div class="event-card" id="list-event-card-{{ event.id }}">
+                <div>
+                    <div class="event-category-badge">{{ event.category.name }}</div>
+                    <h3 class="event-title">{{ event.title }}</h3>
+                    <p class="event-description-preview">{{ event.description }}</p>
+                </div>
+                
+                <div>
+                    <div class="event-metadata">
+                        <div class="meta-item">
+                            <span class="meta-icon">📅</span>
+                            <span>{{ event.event_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-icon">📍</span>
+                            <span>{{ event.location }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-icon">👤</span>
+                            <span>主辦方：{{ event.organizer.username }}</span>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('events.event_detail', id=event.id) }}" class="btn btn-secondary btn-sm" style="width: 100%;" id="list-event-link-btn-{{ event.id }}">查看詳情 & 收藏</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div style="text-align: center; padding: 60px 20px; border: 1px dashed var(--border-color); border-radius: var(--border-radius-lg); background: rgba(255,255,255,0.01);" id="list-no-events-placeholder">
+        <p style="color: var(--text-secondary); font-size: 16px; margin-bottom: 15px;">找不到任何符合條件的活動。</p>
+        <a href="{{ url_for('events.list_events') }}" class="btn btn-secondary btn-sm" id="list-reset-btn">清除篩選並重設</a>
+    </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if action == 'new' %}發布活動{% else %}編輯活動 - {{ event.title }}{% endif %} - 校園活動資訊整合平台
+{% endblock %}
+
+{% block content %}
+<!-- Back Link -->
+<div style="margin-bottom: 25px;">
+    <a href="javascript:history.back()" style="color: var(--text-secondary); text-decoration: none; font-weight: 500;" id="form-back-link">
+        ← 返回上一頁
+    </a>
+</div>
+
+<div class="form-container" id="event-form-container" style="max-width: 700px;">
+    <h2 class="form-title">
+        {% if action == 'new' %}✍️ 發布全新活動{% else %}✏️ 編輯活動資訊{% endif %}
+    </h2>
+    
+    <form action="{% if action == 'new' %}{{ url_for('events.create_event') }}{% else %}{{ url_for('events.edit_event', id=event.id) }}{% endif %}" method="POST" id="event-editor-form">
+        <!-- Event Title -->
+        <div class="form-group">
+            <label for="title" class="form-label">活動標題 <span style="color: var(--accent);">*</span></label>
+            <input type="text" name="title" id="title" class="form-control" placeholder="請輸入吸睛的活動標題..." value="{{ event.title if event else '' }}" required>
+        </div>
+        
+        <!-- Category & Time Grid -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Category -->
+            <div class="form-group">
+                <label for="category_id" class="form-label">活動類別 <span style="color: var(--accent);">*</span></label>
+                <select name="category_id" id="category_id" class="form-control" style="background-color: #161c2d;" required>
+                    <option value="" disabled {% if not event %}selected{% endif %}>請選擇類別...</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if event and event.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Event Date -->
+            <div class="form-group">
+                <label for="event_date" class="form-label">活動日期與時間 <span style="color: var(--accent);">*</span></label>
+                <input type="datetime-local" name="event_date" id="event_date" class="form-control" value="{{ event.event_date.strftime('%Y-%m-%dT%H:%M') if event else '' }}" required>
+            </div>
+        </div>
+        
+        <!-- Location -->
+        <div class="form-group">
+            <label for="location" class="form-label">舉辦地點 <span style="color: var(--accent);">*</span></label>
+            <input type="text" name="location" id="location" class="form-control" placeholder="例如：體育館、圖書館大樓演藝廳" value="{{ event.location if event else '' }}" required>
+        </div>
+        
+        <!-- Description -->
+        <div class="form-group">
+            <label for="description" class="form-label">活動詳細內容說明 <span style="color: var(--accent);">*</span></label>
+            <textarea name="description" id="description" class="form-control" placeholder="請詳細說明活動主旨、參加對象、報名方式及聯絡管道..." required>{{ event.description if event else '' }}</textarea>
+        </div>
+
+        <!-- SMS Note (Only on creation) -->
+        {% if action == 'new' %}
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--border-radius-md); padding: 15px; margin-bottom: 25px;">
+                <h4 style="color: var(--secondary); font-size: 15px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span>🔔 最新活動簡訊通知推播</span>
+                    <span class="sms-badge" style="font-size: 10px;">AUTO TRIGGER</span>
+                </h4>
+                <p style="color: var(--text-secondary); font-size: 13.5px; line-height: 1.5;">
+                    本系統已內建簡訊推播功能。當您點擊發布後，系統將會<strong>自動發送簡訊通知</strong>給所有勾選訂閱的學生用戶，協助您的活動達到最大曝光！
+                </p>
+            </div>
+        {% endif %}
+        
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary" style="width: 100%;" id="form-submit-btn">
+            {% if action == 'new' %}🚀 發布活動並傳送簡訊通知{% else %}💾 儲存修改內容{% endif %}
+        </button>
+    </form>
+</div>
+{% endblock %}
