@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}登入 - 校園活動資訊整合平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;" id="loginRow">
+    <div class="col-md-6 col-lg-4" id="loginCol">
+        <div class="glass-panel p-5" id="loginCard">
+            <!-- 標題 -->
+            <div class="text-center mb-4" id="loginHeader">
+                <i class="bi bi-shield-lock-fill text-info" style="font-size: 3rem;"></i>
+                <h1 class="h3 fw-bold mt-2" id="loginTitle">會員登入</h1>
+                <p class="text-muted" id="loginSubtext">登入以收藏活動或進行活動發布管理。</p>
+            </div>
+            
+            <!-- 表單 -->
+            <form action="{{ url_for('auth.login') }}" method="POST" id="loginForm">
+                <!-- 帳號 -->
+                <div class="mb-3" id="groupLoginUsername">
+                    <label for="username" class="form-label text-light fw-medium">使用者帳號</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control bg-transparent border-secondary text-light" id="username" name="username" placeholder="請輸入學號或帳號" required>
+                    </div>
+                </div>
+                
+                <!-- 密碼 -->
+                <div class="mb-4" id="groupLoginPassword">
+                    <label for="password" class="form-label text-light fw-medium">密碼</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control bg-transparent border-secondary text-light" id="password" name="password" placeholder="請輸入密碼" required>
+                    </div>
+                </div>
+                
+                <!-- 登入按鈕 -->
+                <div class="d-grid gap-2 mb-3" id="groupLoginSubmit">
+                    <button type="submit" class="btn btn-premium" id="submitLoginBtn">登入平台</button>
+                </div>
+                
+                <!-- 沒有帳號連結 -->
+                <div class="text-center mt-3" id="loginFooter">
+                    <span class="text-muted">還沒有帳號嗎？</span>
+                    <a href="{{ url_for('auth.register') }}" class="text-info text-decoration-none fw-semibold ms-1" id="registerRedirect">立即註冊</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

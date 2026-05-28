@@ -1,93 +1,107 @@
-# 資料庫設計 (DB Design)
+# 資料庫設計文件 (Database Schema Design)
 
-## 1. ER 圖 (實體關係圖)
+本文件根據 [PRD.md](file:///Users/wilson/oa3243test/docs/PRD.md) 與 [ARCHITECTURE.md](file:///Users/wilson/oa3243test/docs/ARCHITECTURE.md) 的規劃，設計 SQLite 資料表欄位、型別與關聯，並提供 SQL 建表語法與 Python Model 程式碼設計。
 
-以下圖表展示了校園活動資訊整合平台核心的資料表與彼此間的關聯：
+---
+
+## 1. 實體關係圖 (ER Diagram)
+
+本系統包含三個核心資料表：`users` (使用者)、`events` (活動) 以及用來記錄學生收藏活動的 `favorites` (多對多關聯表)。
 
 ```mermaid
 erDiagram
+    users ||--o{ events : "發布 (1對多)"
+    users ||--o{ favorites : "收藏 (多對多)"
+    events ||--o{ favorites : "被收藏 (多對多)"
+
     users {
-        int id PK
-        string username
-        string email
-        string password_hash
-        string role "預設為 student"
-        string phone "允許為 NULL"
-        boolean receive_sms "預設為 0 (不訂閱)"
-        datetime created_at
-    }
-    
-    categories {
-        int id PK
-        string name
-    }
-    
-    events {
-        int id PK
-        string title
-        string description
-        datetime event_date
-        string location
-        int organizer_id FK "關聯至 users.id"
-        int category_id FK "關聯至 categories.id"
-        datetime created_at
-    }
-    
-    bookmarks {
-        int id PK
-        int user_id FK "關聯至 users.id"
-        int event_id FK "關聯至 events.id"
-        datetime created_at
+        INTEGER id PK "自動遞增 ID"
+        TEXT username "唯一使用者名稱"
+        TEXT password_hash "雜湊加密後的密碼"
+        TEXT email "唯一電子郵件"
+        TEXT role "角色 ('student' 或 'organizer')"
+        DATETIME created_at "建立時間"
     }
 
-    users ||--o{ events : "發布 (organizer)"
-    users ||--o{ bookmarks : "收藏 (student)"
-    events ||--o{ bookmarks : "被收藏"
-    categories ||--o{ events : "歸類"
+    events {
+        INTEGER id PK "自動遞增 ID"
+        TEXT title "活動名稱"
+        TEXT category "活動分類 ('lecture', 'club', 'competition', 'job', 'announcement')"
+        DATETIME start_time "活動開始時間"
+        DATETIME end_time "活動結束時間"
+        TEXT location "活動地點"
+        TEXT description "詳細描述"
+        TEXT registration_link "外部報名連結"
+        TEXT contact_info "聯絡資訊"
+        INTEGER organizer_id FK "發布者 ID (關聯 users.id)"
+        DATETIME created_at "建立時間"
+    }
+
+    favorites {
+        INTEGER user_id PK, FK "使用者 ID (關聯 users.id)"
+        INTEGER event_id PK, FK "活動 ID (關聯 events.id)"
+        DATETIME created_at "收藏時間"
+    }
 ```
 
 ---
 
 ## 2. 資料表詳細說明
 
-### 2.1 users (使用者)
+### 2.1 `users` 資料表 (使用者帳號)
 儲存一般學生與活動主辦單位的帳號資訊。
-- `id` (INTEGER): Primary Key, 自動遞增。
-- `username` (VARCHAR(50)): 必填，使用者暱稱或組織名稱。
-- `email` (VARCHAR(120)): 必填，唯一值，作為登入帳號。
-- `password_hash` (VARCHAR(256)): 必填，加密後的密碼。
-- `role` (VARCHAR(20)): 使用者身分，預設為 `student`，主辦單位可為 `organizer`。
-- `phone` (VARCHAR(20)): 選填，使用者聯絡手機，用於簡訊通知。
-- `receive_sms` (BOOLEAN): 是否訂閱簡訊通知，預設為 0 (代表不訂閱)。
-- `created_at` (DATETIME): 帳號建立時間。
 
-### 2.2 categories (活動分類)
-儲存系統中可用的活動分類，供搜尋與過濾使用。
-- `id` (INTEGER): Primary Key, 自動遞增。
-- `name` (VARCHAR(50)): 必填，唯一值，分類名稱（例如：學術講座、體育競賽）。
+| 欄位名稱 | 資料型別 (SQLite) | 屬性限制 | 說明 |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | 使用者唯一識別碼。 |
+| `username` | `TEXT` | `UNIQUE`, `NOT NULL` | 登入帳號，不可重複。 |
+| `password_hash` | `TEXT` | `NOT NULL` | 加密後的密碼欄位。 |
+| `email` | `TEXT` | `UNIQUE`, `NOT NULL` | 使用者信箱，主要用於通知與驗證。 |
+| `role` | `TEXT` | `NOT NULL` | 使用者角色，僅限 `'student'` (一般學生) 或 `'organizer'` (活動主辦單位)。 |
+| `created_at` | `DATETIME` | `DEFAULT CURRENT_TIMESTAMP` | 帳號創立日期與時間。 |
 
-### 2.3 events (活動資訊)
-儲存各項活動的詳細資訊。
-- `id` (INTEGER): Primary Key, 自動遞增。
-- `title` (VARCHAR(150)): 必填，活動標題。
-- `description` (TEXT): 必填，活動內容說明。
-- `event_date` (DATETIME): 必填，活動預定舉辦時間。
-- `location` (VARCHAR(150)): 必填，活動舉辦地點。
-- `organizer_id` (INTEGER): 必填，Foreign Key 對應到 `users.id`。
-- `category_id` (INTEGER): 必填，Foreign Key 對應到 `categories.id`。
-- `created_at` (DATETIME): 活動資料建立時間。
+### 2.2 `events` 資料表 (校園活動)
+儲存由主辦單位發布的各類校園活動詳細資訊。
 
-### 2.4 bookmarks (活動收藏)
-紀錄一般學生收藏了哪些活動。
-- `id` (INTEGER): Primary Key, 自動遞增。
-- `user_id` (INTEGER): 必填，Foreign Key 對應到 `users.id`。
-- `event_id` (INTEGER): 必填，Foreign Key 對應到 `events.id`。
-- `created_at` (DATETIME): 收藏加入時間。
+| 欄位名稱 | 資料型別 (SQLite) | 屬性限制 | 說明 |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | 活動唯一識別碼。 |
+| `title` | `TEXT` | `NOT NULL` | 活動標題，如「第十屆吉他社成果發表」。 |
+| `category` | `TEXT` | `NOT NULL` | 分類：`lecture` (講座), `club` (社團), `competition` (競賽), `job` (工讀), `announcement` (公告)。 |
+| `start_time` | `DATETIME` | `NOT NULL` | 活動開始日期與時間。 |
+| `end_time` | `DATETIME` | `NOT NULL` | 活動結束日期與時間。 |
+| `location` | `TEXT` | `NOT NULL` | 活動舉辦地點，例如「學生活動中心 401」。 |
+| `description` | `TEXT` | 允許 `NULL` | 活動內容詳細說明與注意事項。 |
+| `registration_link` | `TEXT` | 允許 `NULL` | 外部報名表單（如 Google 表單）的 URL。 |
+| `contact_info` | `TEXT` | 允許 `NULL` | 主辦人聯絡電話或 Email。 |
+| `organizer_id` | `INTEGER` | `FOREIGN KEY`, `NOT NULL` | 指向發布該活動的主辦單位 `users.id`。 |
+| `created_at` | `DATETIME` | `DEFAULT CURRENT_TIMESTAMP` | 活動發布的系統時間。 |
+
+### 2.3 `favorites` 資料表 (活動收藏關係)
+建立學生與活動之間的多對多關聯（一位學生可收藏多個活動，一個活動可被多位學生收藏）。
+
+| 欄位名稱 | 資料型別 (SQLite) | 屬性限制 | 說明 |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `INTEGER` | `PRIMARY KEY`, `FOREIGN KEY` | 指向收藏此活動的學生 `users.id`。 |
+| `event_id` | `INTEGER` | `PRIMARY KEY`, `FOREIGN KEY` | 指向被收藏的活動 `events.id`。 |
+| `created_at` | `DATETIME` | `DEFAULT CURRENT_TIMESTAMP` | 使用者收藏此活動的時間點。 |
 
 ---
 
 ## 3. SQL 建表語法
-完整的建表語法請參考專案目錄中的 `database/schema.sql` 檔案。
 
-## 4. Python Model 程式碼
-基於架構文件中的技術選型，我們使用 SQLAlchemy 來實作 Python Model，詳細程式碼請見 `app/models.py`。
+以下為 SQLite 原生建表 SQL，儲存於 [database/schema.sql](file:///Users/wilson/oa3243test/database/schema.sql)。
+
+*   已啟用外鍵約束 (`FOREIGN KEY`)。
+*   為 `favorites` 設定複合主鍵 (`PRIMARY KEY (user_id, event_id)`)。
+*   對常見查詢欄位建立索引以提升搜尋效能。
+
+---
+
+## 4. Python Model 實作 (SQLAlchemy)
+
+程式碼使用 **Flask-SQLAlchemy**。以下為 Model 目錄的對應檔案設計：
+*   [app/models/\_\_init\_\_.py](file:///Users/wilson/oa3243test/app/models/__init__.py): 初始化 `db` 實例與匯出。
+*   [app/models/user.py](file:///Users/wilson/oa3243test/app/models/user.py): 包含密碼加密與 CRUD 輔助方法。
+*   [app/models/event.py](file:///Users/wilson/oa3243test/app/models/event.py): 包含活動建立、篩選與更新。
+*   [app/models/favorite.py](file:///Users/wilson/oa3243test/app/models/favorite.py): 處理加入收藏、取消收藏及查詢學生收藏清單。

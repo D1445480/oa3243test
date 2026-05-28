@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}活動管理後台 - 校園活動資訊整合平台{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4" id="manageHeaderRow">
+    <div class="col-md" id="manageTitleCol">
+        <h1 class="display-6 fw-bold" id="manageHeading">
+            <i class="bi bi-kanban-fill text-info me-2"></i>活動管理後台
+        </h1>
+        <p class="text-muted mb-md-0" id="manageSubheading">在此查看、編輯您所發布的所有校園活動，並追蹤學生的收藏熱度。</p>
+    </div>
+    <div class="col-md-auto" id="manageActionCol">
+        <a href="{{ url_for('event.publish') }}" class="btn btn-premium" id="manageCreateBtn">
+            <i class="bi bi-plus-lg me-1"></i>發布新活動
+        </a>
+    </div>
+</div>
+
+{% if events %}
+    <!-- 活動列表表格 (Responsive Table in Glass Panel) -->
+    <div class="glass-panel p-4 overflow-hidden" id="manageTablePanel">
+        <div class="table-responsive" id="tableResponsive">
+            <table class="table table-hover table-dark align-middle mb-0" id="manageTable" style="--bs-table-bg: transparent; --bs-table-hover-bg: rgba(255,255,255,0.03);">
+                <thead>
+                    <tr class="text-secondary border-secondary" id="tableHeaderRow">
+                        <th scope="col" style="width: 25%;">活動名稱</th>
+                        <th scope="col" style="width: 12%;">活動分類</th>
+                        <th scope="col" style="width: 20%;">活動時間</th>
+                        <th scope="col" style="width: 15%;">活動地點</th>
+                        <th scope="col" style="width: 10%;" class="text-center">收藏熱度</th>
+                        <th scope="col" style="width: 18%;" class="text-end">管理操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                        <tr class="border-secondary" id="row-{{ event.id }}">
+                            <!-- 活動名稱 -->
+                            <td>
+                                <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="text-light text-decoration-none fw-semibold link-info" id="rowTitle-{{ event.id }}">
+                                    {{ event.title }}
+                                </a>
+                            </td>
+                            <!-- 分類 -->
+                            <td>
+                                <span class="card-category-badge {{ event.category }} mb-0 py-1 px-2" style="font-size: 0.75rem;" id="rowBadge-{{ event.id }}">
+                                    {% if event.category == 'lecture' %}學術講座
+                                    {% elif event.category == 'club' %}社團招生
+                                    {% elif event.category == 'competition' %}競賽活動
+                                    {% elif event.category == 'job' %}校內工讀
+                                    {% else %}學校公告
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <!-- 時間 -->
+                            <td class="small text-muted" id="rowTime-{{ event.id }}">
+                                <div>起：{{ event.start_time.strftime('%Y-%m-%d %H:%M') }}</div>
+                                <div>迄：{{ event.end_time.strftime('%Y-%m-%d %H:%M') }}</div>
+                            </td>
+                            <!-- 地點 -->
+                            <td class="text-light-muted small text-truncate" style="max-width: 150px;" id="rowLocation-{{ event.id }}">
+                                {{ event.location }}
+                            </td>
+                            <!-- 收藏次數統計 (呼叫關係表的 count 獲得人氣熱度) -->
+                            <td class="text-center" id="rowFavCount-{{ event.id }}">
+                                <span class="badge rounded-pill bg-danger-subtle text-danger px-3 py-2" style="font-size: 0.85rem; border: 1px solid rgba(239, 68, 68, 0.2);" title="已有 {{ event.favorited_by_relation.count() }} 人收藏此活動">
+                                    <i class="bi bi-heart-fill me-1"></i>
+                                    {{ event.favorited_by_relation.count() }}
+                                </span>
+                            </td>
+                            <!-- 操作按鈕 -->
+                            <td class="text-end" id="rowActions-{{ event.id }}">
+                                <div class="d-inline-flex gap-2">
+                                    <a href="{{ url_for('event.edit', event_id=event.id) }}" class="btn btn-sm btn-glass text-warning border-warning border-opacity-25" title="編輯活動" id="rowEditBtn-{{ event.id }}">
+                                        <i class="bi bi-pencil-square"></i> 編輯
+                                    </a>
+                                    
+                                    <form action="{{ url_for('event.delete', event_id=event.id) }}" method="POST" onsubmit="return confirm('確定要刪除「{{ event.title }}」活動嗎？刪除後學生將無法瀏覽。');" class="d-inline" id="rowDeleteForm-{{ event.id }}">
+                                        <button type="submit" class="btn btn-sm btn-glass text-danger border-danger border-opacity-25" title="刪除活動" id="rowDeleteBtn-{{ event.id }}">
+                                            <i class="bi bi-trash3"></i> 刪除
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <!-- 尚未發布活動時的空狀態 -->
+    <div class="row justify-content-center my-5" id="manageEmptyRow">
+        <div class="col-md-6" id="manageEmptyCol">
+            <div class="glass-panel empty-state p-5" id="manageEmptyPanel">
+                <i class="bi bi-calendar-plus text-muted mb-4" style="font-size: 5rem;"></i>
+                <h2 class="h4 fw-bold mb-3" id="manageEmptyTitle">您目前尚未發布過任何活動</h2>
+                <p class="text-muted mb-4" id="manageEmptyText">快來發布第一個校園活動吧！發布後系統會將您的活動推送至首頁活動看板，供全校師生瀏覽與收藏。</p>
+                <a href="{{ url_for('event.publish') }}" class="btn btn-premium" id="manageEmptyCreateBtn">
+                    <i class="bi bi-plus-lg me-1"></i>發布您的第一個活動
+                </a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

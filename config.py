@@ -1,15 +1,16 @@
 import os
+from dotenv import load_dotenv
+
+# 載入 .env 檔中的環境變數
+load_dotenv()
 
 class Config:
-    # 網站安全金鑰
+    """專案組態設定"""
     SECRET_KEY = os.environ.get('SECRET_KEY', 'campus-events-platform-secret-key-12938')
     
-    # 取得目前檔案路徑，並指向專案根目錄的 instance/database.db
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL', 
-        f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'database.db')}"
-    )
+    # 預設資料庫存放在 instance/database.db
+    # SQLAlchemy 的 sqlite:/// 後接相對路徑時，會自動指向 Flask app 的 instance 資料夾
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///database.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # 簡訊服務設定 (Twilio 預留)

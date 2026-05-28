@@ -1,87 +1,145 @@
 {% extends "base.html" %}
 
-{% block title %}首頁 - 校園活動資訊整合平台{% endblock %}
+{% block title %}活動看板 - 校園活動資訊整合平台{% endblock %}
 
 {% block content %}
-<!-- Premium Hero Banner -->
-<section class="hero" id="hero-section">
-    <h1>校園活動資訊整合平台</h1>
-    <p>匯整全校的講座學術、社團成果、體育競賽、工讀資訊，讓你隨時掌握最新校園精彩脈動！</p>
-    
-    <!-- Hero Call to Action -->
-    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 10px;">
-        {% if not session.get('user_id') %}
-            <a href="{{ url_for('auth.register') }}" class="btn btn-primary" id="hero-btn-reg">註冊帳號 & 訂閱最新簡訊通知</a>
-            <a href="{{ url_for('events.list_events') }}" class="btn btn-secondary" id="hero-btn-browse">瀏覽所有活動</a>
-        {% else %}
-            {% if session.get('role') == 'organizer' %}
-                <a href="{{ url_for('events.create_event') }}" class="btn btn-primary" id="hero-btn-create">✍️ 立刻發布新活動</a>
-            {% else %}
-                <a href="{{ url_for('events.list_events') }}" class="btn btn-primary" id="hero-btn-list">🎯 探索熱門校園活動</a>
-            {% endif %}
-        {% endif %}
-    </div>
-</section>
-
-<!-- Search and Filtering -->
-<section class="search-filter-section" id="filter-section">
-    <form action="{{ url_for('events.search_events') }}" method="GET" class="search-form" id="search-form">
-        <input type="text" name="q" placeholder="搜尋活動名稱、關鍵字..." class="search-input" id="search-input-box" required>
-        <button type="submit" class="btn btn-primary search-btn" id="search-submit-btn">🔍 搜尋</button>
-    </form>
-
-    <div class="category-tags" id="category-pills">
-        <a href="{{ url_for('events.list_events') }}" class="tag active" id="tag-all">全部類別</a>
-        {% for cat in categories %}
-            <a href="{{ url_for('events.list_events', category=cat.id) }}" class="tag" id="tag-cat-{{ cat.id }}">{{ cat.name }}</a>
-        {% endfor %}
-    </div>
-</section>
-
-<!-- Section: Upcoming Events -->
-<section id="upcoming-events-section" style="margin-top: 50px;">
-    <h2 style="font-size: 28px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;">
-        <span>🔥 即將舉辦的熱門活動</span>
-        <span style="font-size: 14px; background: rgba(99, 102, 241, 0.15); color: var(--primary); padding: 4px 12px; border-radius: 20px;">最新預覽</span>
-    </h2>
-    
-    {% if events %}
-        <div class="events-grid" id="events-grid-box">
-            {% for event in events %}
-                <div class="event-card" id="event-card-{{ event.id }}">
-                    <div>
-                        <div class="event-category-badge">{{ event.category.name }}</div>
-                        <h3 class="event-title">{{ event.title }}</h3>
-                        <p class="event-description-preview">{{ event.description }}</p>
-                    </div>
-                    
-                    <div>
-                        <div class="event-metadata">
-                            <div class="meta-item">
-                                <span class="meta-icon">📅</span>
-                                <span>{{ event.event_date.strftime('%Y-%m-%d %H:%M') }}</span>
-                            </div>
-                            <div class="meta-item">
-                                <span class="meta-icon">📍</span>
-                                <span>{{ event.location }}</span>
-                            </div>
-                            <div class="meta-item">
-                                <span class="meta-icon">👤</span>
-                                <span>主辦方：{{ event.organizer.username }}</span>
-                            </div>
-                        </div>
-                        <a href="{{ url_for('events.event_detail', id=event.id) }}" class="btn btn-secondary btn-sm" style="width: 100%;" id="event-link-btn-{{ event.id }}">查看詳情 & 收藏</a>
+<!-- 首頁大看板 (Hero Section) -->
+<div class="row mb-5" id="heroRow">
+    <div class="col" id="heroCol">
+        <div class="glass-panel p-5 text-center position-relative overflow-hidden" id="heroPanel">
+            <h1 class="display-5 fw-bold mb-3" id="heroTitle">
+                <span class="text-info"><i class="bi bi-compass"></i> 探索</span> 精彩的大學校園生活
+            </h1>
+            <p class="lead text-secondary mx-auto mb-4" style="max-width: 600px;" id="heroText">
+                整合講座、社團活動、競賽、工讀資訊與公告，讓您不再錯過校園中的任何重要時刻。
+            </p>
+            
+            <!-- 搜尋與篩選列 (Search Bar) -->
+            <form action="{{ url_for('main.index') }}" method="GET" class="row g-2 justify-content-center" id="searchForm">
+                <input type="hidden" name="category" value="{{ category }}">
+                <div class="col-md-6 col-lg-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control bg-transparent border-secondary text-light" placeholder="搜尋活動名稱、關鍵字、地點..." value="{{ search_query }}" id="searchInput">
                     </div>
                 </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-premium" id="searchSubmitBtn">搜尋</button>
+                    {% if search_query or category %}
+                        <a href="{{ url_for('main.index') }}" class="btn btn-glass" id="resetSearchBtn">重設</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 分類標籤列 (Category Tabs - 動態讀取資料庫分類) -->
+<div class="row mb-4" id="categoryRow">
+    <div class="col text-center" id="categoryCol">
+        <div class="d-flex flex-wrap justify-content-center gap-2" id="categoryTabs">
+            <a href="{{ url_for('main.index', q=search_query) }}" 
+               class="btn btn-sm {% if not category %}btn-premium{% else %}btn-glass{% endif %}" id="tabAll">
+                全部活動
+            </a>
+            {% for cat in categories %}
+                <!-- cat|string 會自動呼叫 Category.__str__() 返回英文識別碼以控制 CSS 樣式 -->
+                <a href="{{ url_for('main.index', category=cat|string, q=search_query) }}" 
+                   class="btn btn-sm {% if category == cat|string %}btn-premium{% else %}btn-glass{% endif %}" id="tabCat-{{ cat.id }}">
+                    {% if cat|string == 'lecture' %}<i class="bi bi-journal-bookmark me-1"></i>
+                    {% elif cat|string == 'club' %}<i class="bi bi-people me-1"></i>
+                    {% elif cat|string == 'competition' %}<i class="bi bi-trophy me-1"></i>
+                    {% elif cat|string == 'job' %}<i class="bi bi-briefcase me-1"></i>
+                    {% else %}<i class="bi bi-megaphone me-1"></i>
+                    {% endif %}
+                    {{ cat.name }}
+                </a>
             {% endfor %}
         </div>
-    {% else %}
-        <div style="text-align: center; padding: 40px; border: 1px dashed var(--border-color); border-radius: var(--border-radius-lg); background: rgba(255,255,255,0.01);" id="no-events-placeholder">
-            <p style="color: var(--text-secondary); font-size: 16px;">目前暫無即將舉辦的活動。</p>
-            {% if session.get('role') == 'organizer' %}
-                <a href="{{ url_for('events.create_event') }}" class="btn btn-primary btn-sm" style="margin-top: 15px;" id="no-events-create-btn">立刻發布第一個活動！</a>
-            {% endif %}
+    </div>
+</div>
+
+<!-- 活動展示列表 -->
+{% if events %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="eventsGrid">
+        {% for event in events %}
+            <div class="col" id="eventCol-{{ event.id }}">
+                <!-- event.category|string 會自動呼叫 Category.__str__() 返回英文名稱如 lecture/club -->
+                <div class="card glass-panel event-card {{ event.category }}" id="eventCard-{{ event.id }}">
+                    
+                    <!-- 收藏愛心按鈕 (學生可點擊，訪客會觸發登入提示) -->
+                    {% if not current_user.is_authenticated or current_user.role == 'student' %}
+                        <button class="btn-fav-toggle {% if event.id in fav_event_ids %}favorited{% endif %}" 
+                                data-event-id="{{ event.id }}" 
+                                title="{% if event.id in fav_event_ids %}取消收藏{% else %}加入收藏{% endif %}"
+                                aria-label="收藏活動"
+                                id="favHeartBtn-{{ event.id }}">
+                            <i class="bi {% if event.id in fav_event_ids %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                        </button>
+                    {% endif %}
+                    
+                    <div class="card-body p-4 d-flex flex-column h-100" id="cardBody-{{ event.id }}">
+                        <!-- 分類標籤 -->
+                        <div>
+                            <span class="card-category-badge" id="badge-{{ event.id }}">
+                                {{ event.category.name }}
+                            </span>
+                            
+                            <!-- 動態活動狀態標籤 -->
+                            <span class="badge {% if event.status == 'ongoing' %}bg-success{% elif event.status == 'upcoming' %}bg-info text-dark{% else %}bg-secondary{% endif %} ms-2" style="font-size: 0.7rem;" id="status-{{ event.id }}">
+                                {% if event.status == 'ongoing' %}進行中
+                                {% elif event.status == 'upcoming' %}即將開始
+                                {% else %}已結束
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <!-- 活動名稱 -->
+                        <h3 class="card-title h5 mb-3 fw-bold" id="title-{{ event.id }}">
+                            <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="text-decoration-none text-light link-info">
+                                {{ event.title }}
+                            </a>
+                        </h3>
+                        
+                        <!-- 資訊摘要 -->
+                        <p class="text-muted small text-truncate-3 mb-4" style="min-height: 4.2em;" id="desc-{{ event.id }}">
+                            {{ event.description or "主辦單位尚未提供此活動的詳細內容介紹。" }}
+                        </p>
+                        
+                        <!-- 時間與地點 -->
+                        <div class="mt-auto" id="meta-{{ event.id }}">
+                            <div class="meta-item" id="time-{{ event.id }}">
+                                <i class="bi bi-calendar-event"></i>
+                                <span>{{ event.start_time.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                            <div class="meta-item" id="location-{{ event.id }}">
+                                <i class="bi bi-geo-alt"></i>
+                                <span class="text-truncate">{{ event.location }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 詳情按鈕 -->
+                        <div class="d-grid mt-4" id="action-{{ event.id }}">
+                            <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="btn btn-glass btn-sm" id="viewDetailBtn-{{ event.id }}">
+                                查看詳細資訊
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <!-- 查無活動時的空狀態 -->
+    <div class="row justify-content-center my-5" id="noEventsRow">
+        <div class="col-md-6" id="noEventsCol">
+            <div class="glass-panel empty-state p-5" id="noEventsPanel">
+                <i class="bi bi-calendar-x text-muted mb-4" style="font-size: 5rem;"></i>
+                <h2 class="h4 fw-bold mb-3" id="noEventsTitle">目前沒有找到符合條件的活動</h2>
+                <p class="text-muted mb-4" id="noEventsText">請嘗試更換分類篩選，或使用其他關鍵字重新搜尋。</p>
+                <a href="{{ url_for('main.index') }}" class="btn btn-premium" id="clearFilterBtn">顯示所有活動</a>
+            </div>
         </div>
-    {% endif %}
-</section>
+    </div>
+{% endif %}
 {% endblock %}
