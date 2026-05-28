@@ -18,6 +18,8 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'student' 或 'organizer'
+    phone = db.Column(db.String(20), nullable=True)
+    receive_sms = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # 關聯：一個主辦單位可以發布多個活動 (1對多)
@@ -34,7 +36,7 @@ class User(db.Model, UserMixin):
     # === CRUD 輔助方法 ===
 
     @classmethod
-    def create(cls, username, email, password, role):
+    def create(cls, username, email, password, role, phone=None, receive_sms=False):
         """
         註冊新使用者，若發生資料庫錯誤則自動進行 Rollback
         """
@@ -42,7 +44,9 @@ class User(db.Model, UserMixin):
             user = cls(
                 username=username,
                 email=email,
-                role=role
+                role=role,
+                phone=phone,
+                receive_sms=receive_sms
             )
             user.set_password(password)
             db.session.add(user)

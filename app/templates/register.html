@@ -42,6 +42,25 @@
                     </div>
                 </div>
                 
+                <!-- 手機號碼 (選填) -->
+                <div class="mb-3" id="groupPhone">
+                    <label for="phone" class="form-label text-light fw-medium">手機號碼 (選填 - 用於簡訊通知)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="bi bi-phone"></i></span>
+                        <input type="tel" class="form-control bg-transparent border-secondary text-light" id="phone" name="phone" placeholder="例如：0912345678">
+                    </div>
+                </div>
+
+                <!-- 簡訊訂閱設定 -->
+                <div class="mb-3" id="groupReceiveSms">
+                    <div class="form-checkbox-group">
+                        <input class="form-checkbox" type="checkbox" name="receive_sms" id="receiveSms" value="1" checked>
+                        <label class="checkbox-label" for="receiveSms">
+                            我願意接收最新活動的簡訊通知
+                        </label>
+                    </div>
+                </div>
+                
                 <!-- 角色選擇 -->
                 <div class="mb-4" id="groupRole">
                     <label class="form-label text-light fw-medium d-block">我是...</label>

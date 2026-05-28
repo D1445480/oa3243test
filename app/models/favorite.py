@@ -7,15 +7,15 @@ logger = logging.getLogger(__name__)
 
 class Favorite(db.Model):
     """
-    活動收藏關係模型 (學生與活動的多對多關聯表)
+    活動收藏關係模型 (學生與活動的多對多關聯表，對應 bookmarks 資料表)
     """
-    __tablename__ = 'favorites'
+    __tablename__ = 'bookmarks'
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
     event_id = db.Column(db.Integer, db.ForeignKey('events.id', ondelete='CASCADE'), primary_key=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # 設定關聯關係
+    # 設定關聯，使我們可以透過 Favorite 物件直接存取 User 與 Event 物件
     user = db.relationship('User', backref=db.backref('favorites_relation', lazy='dynamic', cascade="all, delete-orphan"))
     event = db.relationship('Event', backref=db.backref('favorited_by_relation', lazy='dynamic', cascade="all, delete-orphan"))
 
@@ -28,7 +28,6 @@ class Favorite(db.Model):
         若該活動已收藏，則將其取消收藏；
         若未收藏，則將其加入收藏。
         回傳值為：('favorited' 或 'unfavorited')
-        若發生資料庫錯誤則自動進行 Rollback
         """
         try:
             existing_fav = cls.query.filter_by(user_id=user_id, event_id=event_id).first()
@@ -75,3 +74,6 @@ class Favorite(db.Model):
 
     def __repr__(self):
         return f"<Favorite User:{self.user_id} -> Event:{self.event_id}>"
+
+# 建立 Bookmark 別名，使組員(d1445480)的簡訊與事件管理功能能無縫存取此模型
+Bookmark = Favorite

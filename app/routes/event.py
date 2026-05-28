@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
 from flask_login import login_required, current_user
+from app.models import db, Category
 from app.models.event import Event
 
 # 設定 logger
@@ -46,10 +47,26 @@ def publish():
                 flash('活動結束時間必須晚於開始時間。', 'warning')
                 return render_template('event_publish.html', event=request.form), 400
 
+            # 從資料庫獲取或建立對應的分類實體 (對應英文分類欄位)
+            mapping = {
+                'lecture': '學術講座',
+                'club': '社團活動',
+                'competition': '運動競賽',
+                'job': '工讀公告',
+                'announcement': '系所通知'
+            }
+            chinese_name = mapping.get(category, '其他活動')
+            cat = Category.query.filter_by(name=chinese_name).first()
+            if not cat:
+                cat = Category(name=chinese_name)
+                db.session.add(cat)
+                db.session.commit()
+            category_id = cat.id
+
             # 建立活動
             Event.create(
                 title=title,
-                category=category,
+                category_id=category_id,
                 start_time=start_time,
                 end_time=end_time,
                 location=location,
@@ -135,10 +152,26 @@ def edit(event_id):
                 flash('活動結束時間必須晚於開始時間。', 'warning')
                 return render_template('event_publish.html', event=event), 400
 
+            # 獲取或建立分類
+            mapping = {
+                'lecture': '學術講座',
+                'club': '社團活動',
+                'competition': '運動競賽',
+                'job': '工讀公告',
+                'announcement': '系所通知'
+            }
+            chinese_name = mapping.get(category, '其他活動')
+            cat = Category.query.filter_by(name=chinese_name).first()
+            if not cat:
+                cat = Category(name=chinese_name)
+                db.session.add(cat)
+                db.session.commit()
+            category_id = cat.id
+
             # 更新活動
             event.update(
                 title=title,
-                category=category,
+                category_id=category_id,
                 start_time=start_time,
                 end_time=end_time,
                 location=location,

@@ -2,8 +2,7 @@ import os
 from flask import Flask
 from flask_login import LoginManager
 from config import Config
-from app.models import db
-from app.models.user import User
+from app.models import db, Category, User
 from app.routes import register_blueprints
 
 # 初始化 LoginManager 擴充套件
@@ -37,8 +36,17 @@ def create_app(config_class=Config):
     if not os.path.exists(app.instance_path):
         os.makedirs(app.instance_path)
 
-    # 自動在 app 啟動時建立 SQLite 資料庫與所有資料表
+    # 自動在 app 啟動時建立 SQLite 資料庫與所有資料表，並置入初始分類資料 (Seeding)
     with app.app_context():
         db.create_all()
+
+        # 預設分類種子資料 (與組員的分類相容)
+        default_categories = ['學術講座', '社團活動', '運動競賽', '工讀公告', '系所通知', '其他活動']
+        for name in default_categories:
+            existing = Category.query.filter_by(name=name).first()
+            if not existing:
+                category = Category(name=name)
+                db.session.add(category)
+        db.session.commit()
 
     return app

@@ -293,3 +293,38 @@ footer {
     margin-top: auto;
     padding: 1.5rem 0;
 }
+
+/* Styled Notification Subscription Badge (Partner SMS Feature) */
+.sms-badge {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: #34D399;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.form-checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.form-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-neon);
+    cursor: pointer;
+}
+
+.checkbox-label {
+    font-size: 14.5px;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+

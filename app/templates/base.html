@@ -34,6 +34,11 @@
                             <i class="bi bi-grid-fill me-1"></i>活動看板
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom {% if request.endpoint == 'events.list_events' %}active{% endif %}" href="{{ url_for('events.list_events') }}" id="navEventsLink">
+                            <i class="bi bi-calendar3 me-1"></i>所有活動
+                        </a>
+                    </li>
                     
                     {% if current_user.is_authenticated %}
                         {% if current_user.role == 'student' %}
@@ -65,11 +70,17 @@
                         <span class="text-light me-2" id="userWelcomeSpan">
                             <i class="bi bi-person-circle me-1 text-info"></i>
                             {{ current_user.username }} 
+                            {% if current_user.phone %}
+                                <span class="text-muted small" style="font-size: 0.75rem;">(📞 {{ current_user.phone }})</span>
+                            {% endif %}
                             <span class="badge {% if current_user.role == 'student' %}bg-primary{% else %}bg-purple{% endif %} ms-1" style="font-size: 0.7rem;">
                                 {% if current_user.role == 'student' %}學生{% else %}主辦單位{% endif %}
                             </span>
+                            {% if current_user.receive_sms %}
+                                <span class="badge bg-success" style="font-size: 0.65rem;" title="已訂閱新活動簡訊通知"><i class="bi bi-chat-text-fill"></i> 簡訊訂閱中</span>
+                            {% endif %}
                         </span>
-                        <!-- 登出需使用 POST 以確保安全 -->
+                        <!-- 登出 -->
                         <form action="{{ url_for('auth.logout') }}" method="POST" class="d-inline" id="logoutForm">
                             <button type="submit" class="btn btn-glass btn-sm" id="logoutButton">
                                 <i class="bi bi-box-arrow-right me-1"></i>登出

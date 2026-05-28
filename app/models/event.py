@@ -1,6 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from app.models import db
+from app.models.category import Category
 
 # 設定 logger
 logger = logging.getLogger(__name__)
@@ -13,27 +14,44 @@ class Event(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     title = db.Column(db.String(150), nullable=False)
-    category = db.Column(db.String(50), nullable=False)  # 'lecture', 'club', 'competition', 'job', 'announcement'
+    description = db.Column(db.Text, nullable=True)
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(150), nullable=False)
-    description = db.Column(db.Text, nullable=True)
     registration_link = db.Column(db.String(255), nullable=True)
     contact_info = db.Column(db.String(150), nullable=True)
     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id', ondelete='CASCADE'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 關聯：指向分類
+    category = db.relationship('Category', backref=db.backref('events_list', lazy=True))
+
+    @property
+    def event_date(self):
+        """
+        為與組員(d1445480)的簡訊發送與日誌功能保持相容，提供 event_date 作為 start_time 的讀寫屬性
+        """
+        return self.start_time
+
+    @event_date.setter
+    def event_date(self, value):
+        self.start_time = value
+        # 預設結束時間為開始時間後 2 小時
+        if not self.end_time:
+            self.end_time = value + timedelta(hours=2)
 
     # === CRUD 與查詢輔助方法 ===
 
     @classmethod
-    def create(cls, title, category, start_time, end_time, location, description, registration_link, contact_info, organizer_id):
+    def create(cls, title, category_id, start_time, end_time, location, description, registration_link, contact_info, organizer_id):
         """
         發布新活動，若發生資料庫錯誤則自動進行 Rollback
         """
         try:
             event = cls(
                 title=title,
-                category=category,
+                category_id=category_id,
                 start_time=start_time,
                 end_time=end_time,
                 location=location,
@@ -64,14 +82,24 @@ class Event(db.Model):
     @classmethod
     def get_all(cls, category=None, search_query=None):
         """
-        取得所有活動列表，支援分類篩選與關鍵字搜尋，依建立時間降冪排序
+        取得所有活動列表，支援分類篩選與關鍵字搜尋，依建立時間降冪排序。
+        category 參數可以是英文識別碼 (如 'lecture') 或中文分類名稱。
         """
         try:
             query = cls.query
             
             # 分類篩選
             if category:
-                query = query.filter(cls.category == category)
+                # 建立英文到中文的轉換映射
+                mapping = {
+                    'lecture': '學術講座',
+                    'club': '社團活動',
+                    'competition': '運動競賽',
+                    'job': '工讀公告',
+                    'announcement': '系所通知'
+                }
+                chinese_name = mapping.get(category, category)  # 若傳入的就是中文，則直接使用
+                query = query.join(Category).filter(Category.name == chinese_name)
                 
             # 關鍵字搜尋 (標題、描述、地點)
             if search_query:
@@ -139,4 +167,4 @@ class Event(db.Model):
             return 'ended'
 
     def __repr__(self):
-        return f"<Event {self.title} (Category: {self.category})>"
+        return f"<Event {self.title}>"

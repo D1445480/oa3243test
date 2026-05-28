@@ -1,6 +1,7 @@
 import logging
 from flask import Blueprint, render_template, request, abort
 from flask_login import current_user
+from app.models import Category
 from app.models.event import Event
 from app.models.favorite import Favorite
 
@@ -21,7 +22,10 @@ def index():
         # 獲取篩選後的活動清單
         events = Event.get_all(category=category or None, search_query=search_query or None)
         
-        # 獲取目前學生的收藏清單，以便在卡片上正確渲染「愛心」狀態
+        # 獲取所有資料庫分類，供首頁分類標籤渲染
+        categories = Category.query.all()
+        
+        # 獲取目前學生的收藏清單，以利在卡片上渲染「紅心」
         fav_event_ids = set()
         if current_user.is_authenticated and current_user.role == 'student':
             fav_events = Favorite.get_by_user(current_user.id)
@@ -30,14 +34,14 @@ def index():
         return render_template(
             'index.html', 
             events=events, 
+            categories=categories,
             category=category, 
             search_query=search_query,
             fav_event_ids=fav_event_ids
         )
     except Exception as e:
         logger.error(f"載入首頁失敗: {str(e)}")
-        # 若是重大異常，直接渲染空白頁面或回傳 Error 資訊
-        return render_template('index.html', events=[], category='', search_query='', fav_event_ids=set())
+        return render_template('index.html', events=[], categories=[], category='', search_query='', fav_event_ids=set())
 
 
 @main_bp.route('/event/detail/<int:event_id>')

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} - 活動詳情{% endblock %}
+
+{% block content %}
+<!-- Back link -->
+<div style="margin-bottom: 25px;">
+    <a href="javascript:history.back()" style="color: var(--text-secondary); text-decoration: none; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;" id="back-link">
+        <span>← 返回上一頁</span>
+    </a>
+</div>
+
+<div class="event-detail-container" id="detail-box">
+    <!-- Header Area -->
+    <div class="event-detail-header" id="detail-header">
+        <div>
+            <span class="event-category-badge" style="margin-bottom: 12px; display: inline-block;">{{ event.category.name }}</span>
+            <h1 class="event-detail-title">{{ event.title }}</h1>
+            <p style="color: var(--text-secondary); font-size: 15px;">
+                由 <strong style="color: var(--primary);">{{ event.organizer.username }}</strong> 發布於 {{ event.created_at.strftime('%Y-%m-%d %H:%M') }}
+            </p>
+        </div>
+        
+        <!-- Toggle Bookmark (Only for student or unlogged users) -->
+        {% if not session.get('user_id') or session.get('role') == 'student' %}
+            <form action="{{ url_for('events.toggle_bookmark', id=event.id) }}" method="POST" id="bookmark-form">
+                {% if is_bookmarked %}
+                    <button type="submit" class="btn btn-danger" id="bookmark-btn-remove">
+                        ❤️ 已收藏 (點擊取消)
+                    </button>
+                {% else %}
+                    <button type="submit" class="btn btn-secondary" id="bookmark-btn-add">
+                        🤍 加入個人收藏
+                    </button>
+                {% endif %}
+            </form>
+        {% endif %}
+    </div>
+
+    <!-- Main Content Details -->
+    <div class="event-detail-body" id="detail-body-layout">
+        <!-- Event Content Description -->
+        <div class="event-detail-content" id="detail-content-area">
+            <h3 style="color: var(--primary); font-size: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">📋 活動詳細說明</h3>
+            <p class="event-detail-description" id="event-desc-content">{{ event.description }}</p>
+        </div>
+
+        <!-- Sidebar Info -->
+        <div class="event-detail-sidebar" id="detail-sidebar-info">
+            <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">ℹ️ 活動時間地點</h3>
+            
+            <div class="event-metadata" style="border: none; padding: 0; margin-bottom: 0;">
+                <div class="meta-item" style="font-size: 15px; margin-bottom: 12px;">
+                    <span class="meta-icon" style="font-size: 18px;">📅 日期時間</span>
+                    <span style="font-weight: 600; color: var(--text-primary);">{{ event.event_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                <div class="meta-item" style="font-size: 15px; margin-bottom: 12px;">
+                    <span class="meta-icon" style="font-size: 18px;">📍 舉辦地點</span>
+                    <span style="font-weight: 600; color: var(--text-primary);">{{ event.location }}</span>
+                </div>
+                <div class="meta-item" style="font-size: 15px;">
+                    <span class="meta-icon" style="font-size: 18px;">🏢 發布單位</span>
+                    <span style="font-weight: 600; color: var(--text-primary);">{{ event.organizer.username }}</span>
+                </div>
+            </div>
+
+            <!-- Action buttons for Organizer -->
+            {% if session.get('user_id') == event.organizer_id %}
+                <div class="event-action-buttons" id="organizer-actions">
+                    <h4 style="margin-bottom: 5px; font-size: 14px; color: var(--text-secondary); text-transform: uppercase;">管理活動工具</h4>
+                    <a href="{{ url_for('events.edit_event', id=event.id) }}" class="btn btn-primary" id="edit-event-btn" style="background: linear-gradient(135deg, #4F46E5 0%, #312E81 100%);">✏️ 編輯活動資訊</a>
+                    
+                    <form action="{{ url_for('events.delete_event', id=event.id) }}" method="POST" onsubmit="return confirm('確定要永久刪除此活動嗎？刪除後將無法恢復！')" id="delete-event-form">
+                        <button type="submit" class="btn btn-danger" style="width: 100%;" id="delete-event-btn">🗑️ 刪除此活動</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

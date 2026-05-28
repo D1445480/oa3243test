@@ -34,7 +34,7 @@
     </div>
 </div>
 
-<!-- 分類標籤列 (Category Tabs) -->
+<!-- 分類標籤列 (Category Tabs - 動態讀取資料庫分類) -->
 <div class="row mb-4" id="categoryRow">
     <div class="col text-center" id="categoryCol">
         <div class="d-flex flex-wrap justify-content-center gap-2" id="categoryTabs">
@@ -42,26 +42,19 @@
                class="btn btn-sm {% if not category %}btn-premium{% else %}btn-glass{% endif %}" id="tabAll">
                 全部活動
             </a>
-            <a href="{{ url_for('main.index', category='lecture', q=search_query) }}" 
-               class="btn btn-sm {% if category == 'lecture' %}btn-premium{% else %}btn-glass{% endif %}" id="tabLecture">
-                <i class="bi bi-journal-bookmark me-1"></i>學術講座
-            </a>
-            <a href="{{ url_for('main.index', category='club', q=search_query) }}" 
-               class="btn btn-sm {% if category == 'club' %}btn-premium{% else %}btn-glass{% endif %}" id="tabClub">
-                <i class="bi bi-people me-1"></i>社團招生
-            </a>
-            <a href="{{ url_for('main.index', category='competition', q=search_query) }}" 
-               class="btn btn-sm {% if category == 'competition' %}btn-premium{% else %}btn-glass{% endif %}" id="tabCompetition">
-                <i class="bi bi-trophy me-1"></i>競賽活動
-            </a>
-            <a href="{{ url_for('main.index', category='job', q=search_query) }}" 
-               class="btn btn-sm {% if category == 'job' %}btn-premium{% else %}btn-glass{% endif %}" id="tabJob">
-                <i class="bi bi-briefcase me-1"></i>校內工讀
-            </a>
-            <a href="{{ url_for('main.index', category='announcement', q=search_query) }}" 
-               class="btn btn-sm {% if category == 'announcement' %}btn-premium{% else %}btn-glass{% endif %}" id="tabAnnouncement">
-                <i class="bi bi-megaphone me-1"></i>學校公告
-            </a>
+            {% for cat in categories %}
+                <!-- cat|string 會自動呼叫 Category.__str__() 返回英文識別碼以控制 CSS 樣式 -->
+                <a href="{{ url_for('main.index', category=cat|string, q=search_query) }}" 
+                   class="btn btn-sm {% if category == cat|string %}btn-premium{% else %}btn-glass{% endif %}" id="tabCat-{{ cat.id }}">
+                    {% if cat|string == 'lecture' %}<i class="bi bi-journal-bookmark me-1"></i>
+                    {% elif cat|string == 'club' %}<i class="bi bi-people me-1"></i>
+                    {% elif cat|string == 'competition' %}<i class="bi bi-trophy me-1"></i>
+                    {% elif cat|string == 'job' %}<i class="bi bi-briefcase me-1"></i>
+                    {% else %}<i class="bi bi-megaphone me-1"></i>
+                    {% endif %}
+                    {{ cat.name }}
+                </a>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -71,6 +64,7 @@
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4" id="eventsGrid">
         {% for event in events %}
             <div class="col" id="eventCol-{{ event.id }}">
+                <!-- event.category|string 會自動呼叫 Category.__str__() 返回英文名稱如 lecture/club -->
                 <div class="card glass-panel event-card {{ event.category }}" id="eventCard-{{ event.id }}">
                     
                     <!-- 收藏愛心按鈕 (學生可點擊，訪客會觸發登入提示) -->
@@ -88,12 +82,7 @@
                         <!-- 分類標籤 -->
                         <div>
                             <span class="card-category-badge" id="badge-{{ event.id }}">
-                                {% if event.category == 'lecture' %}學術講座
-                                {% elif event.category == 'club' %}社團招生
-                                {% elif event.category == 'competition' %}競賽活動
-                                {% elif event.category == 'job' %}校內工讀
-                                {% else %}學校公告
-                                {% endif %}
+                                {{ event.category.name }}
                             </span>
                             
                             <!-- 動態活動狀態標籤 -->

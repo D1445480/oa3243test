@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timedelta
 from app import create_app
-from app.models import db
+from app.models import db, Category
 from app.models.user import User
 from app.models.event import Event
 from app.models.favorite import Favorite
@@ -18,7 +18,7 @@ class CampusEventIntegrationTestCase(unittest.TestCase):
         self.client = self.app.test_client()
         self.app_context = self.app.app_context()
         self.app_context.push()
-        db.create_all()
+        # 資料庫已在 create_app 內自動建立並種子化分類資料
 
     def tearDown(self):
         db.session.remove()
@@ -35,7 +35,7 @@ class CampusEventIntegrationTestCase(unittest.TestCase):
             'role': 'student'
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('註冊成功！請登入帳號。', response.get_data(as_text=True))
+        self.assertIn('註冊成功！請登入您的帳號。', response.get_data(as_text=True))
 
         # 2. 登入學生帳號
         response = self.client.post('/auth/login', data={
@@ -43,7 +43,7 @@ class CampusEventIntegrationTestCase(unittest.TestCase):
             'password': 'password123'
         }, follow_redirects=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('登入成功，歡迎回來 student_test！', response.get_data(as_text=True))
+        self.assertIn('歡迎回來，student_test！', response.get_data(as_text=True))
 
     def test_event_publishing_and_management(self):
         """測試活動發布與管理功能 (主辦單位專屬)"""
@@ -75,7 +75,7 @@ class CampusEventIntegrationTestCase(unittest.TestCase):
         # 驗證資料庫已建立活動
         event = Event.query.filter_by(title='測試社團成果展').first()
         self.assertIsNotNone(event)
-        self.assertEqual(event.category, 'club')
+        self.assertEqual(str(event.category), 'club')
 
         # 3. 進入管理後台檢視
         response = self.client.get('/event/manage')
@@ -113,8 +113,12 @@ class CampusEventIntegrationTestCase(unittest.TestCase):
         org = User.create(username='org_owner', email='org_owner@test.com', password='password', role='organizer')
         start = (datetime.utcnow() + timedelta(days=1))
         end = (datetime.utcnow() + timedelta(days=2))
+        
+        cat = Category.query.filter_by(name='學術講座').first()
+        self.assertIsNotNone(cat)
+        
         event = Event.create(
-            title='講座: AI發展趨勢', category='lecture', start_time=start, end_time=end,
+            title='講座: AI發展趨勢', category_id=cat.id, start_time=start, end_time=end,
             location='資工館101', description='AI講座', registration_link='', contact_info='', organizer_id=org.id
         )
 
