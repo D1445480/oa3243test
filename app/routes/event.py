@@ -64,7 +64,7 @@ def publish():
             category_id = cat.id
 
             # 建立活動
-            Event.create(
+            event = Event.create(
                 title=title,
                 category_id=category_id,
                 start_time=start_time,
@@ -75,7 +75,19 @@ def publish():
                 contact_info=contact_info or None,
                 organizer_id=current_user.id
             )
-            flash('活動發布成功！', 'success')
+            
+            # 觸發最新活動簡訊通知
+            try:
+                from app.utils.sms import notify_users_of_new_event
+                sms_count = notify_users_of_new_event(event)
+                if sms_count > 0:
+                    flash(f'活動發布成功！已發送簡訊通知 {sms_count} 位訂閱使用者。', 'success')
+                else:
+                    flash('活動發布成功！', 'success')
+            except Exception as sms_err:
+                logger.error(f"簡訊通知發送失敗: {str(sms_err)}")
+                flash(f'活動發布成功！(但簡訊發送失敗：{str(sms_err)})', 'warning')
+
             return redirect(url_for('event.manage'))
         except ValueError as ve:
             logger.error(f"日期格式轉換出錯: {str(ve)}")

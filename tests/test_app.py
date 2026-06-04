@@ -151,5 +151,118 @@ class CampusEventIntegrationTestCase(unittest.TestCase):
         # 驗證資料庫收藏關係已移除
         self.assertFalse(Favorite.is_favorited(student.id, event.id))
 
+    def test_event_browsing(self):
+        """測試活動資訊瀏覽功能 (F-01)"""
+        # 1. 建立測試活動
+        org = User.create(username='org_browse', email='org_browse@test.com', password='password', role='organizer')
+        cat = Category.query.filter_by(name='學術講座').first()
+        start = datetime.utcnow() + timedelta(days=1)
+        end = datetime.utcnow() + timedelta(days=2)
+        event = Event.create(
+            title='公開講座: 探索物聯網', category_id=cat.id, start_time=start, end_time=end,
+            location='綜合大樓101', description='物聯網的未來與挑戰', registration_link='', contact_info='聯絡信箱: test@test.com', organizer_id=org.id
+        )
+
+        # 2. 匿名瀏覽首頁列表
+        response = self.client.get('/')
+        self.assertEqual(response.status_code, 200)
+        response_text = response.get_data(as_text=True)
+        self.assertIn('公開講座: 探索物聯網', response_text)
+        self.assertIn('綜合大樓101', response_text)
+
+        # 3. 匿名瀏覽活動詳情頁面
+        response = self.client.get(f'/event/detail/{event.id}')
+        self.assertEqual(response.status_code, 200)
+        detail_text = response.get_data(as_text=True)
+        self.assertIn('公開講座: 探索物聯網', detail_text)
+        self.assertIn('物聯網的未來與挑戰', detail_text)
+        self.assertIn('綜合大樓101', detail_text)
+        self.assertIn('聯絡信箱: test@test.com', detail_text)
+
+    def test_event_category_and_search(self):
+        """測試活動分類與搜尋功能 (F-02)"""
+        # 1. 建立兩個不同分類的活動
+        org = User.create(username='org_search', email='org_search@test.com', password='password', role='organizer')
+        cat_lecture = Category.query.filter_by(name='學術講座').first()
+        cat_club = Category.query.filter_by(name='社團活動').first()
+        start = datetime.utcnow() + timedelta(days=1)
+        end = datetime.utcnow() + timedelta(days=2)
+
+        event_lecture = Event.create(
+            title='人工智慧導論', category_id=cat_lecture.id, start_time=start, end_time=end,
+            location='資工系館', description='學習AI基礎知識', registration_link='', contact_info='', organizer_id=org.id
+        )
+        event_club = Event.create(
+            title='熱舞社迎新晚會', category_id=cat_club.id, start_time=start, end_time=end,
+            location='戶外劇場', description='歡迎所有新生加入熱舞社', registration_link='', contact_info='', organizer_id=org.id
+        )
+
+        # 2. 測試分類篩選 (學術講座)
+        response = self.client.get('/?category=lecture')
+        self.assertEqual(response.status_code, 200)
+        text = response.get_data(as_text=True)
+        self.assertIn('人工智慧導論', text)
+        self.assertNotIn('熱舞社迎新晚會', text)
+
+        # 3. 測試分類篩選 (社團活動)
+        response = self.client.get('/?category=club')
+        self.assertEqual(response.status_code, 200)
+        text = response.get_data(as_text=True)
+        self.assertIn('熱舞社迎新晚會', text)
+        self.assertNotIn('人工智慧導論', text)
+
+        # 4. 測試關鍵字搜尋 (搜尋 '人工智慧')
+        response = self.client.get('/?q=人工智慧')
+        self.assertEqual(response.status_code, 200)
+        text = response.get_data(as_text=True)
+        self.assertIn('人工智慧導論', text)
+        self.assertNotIn('熱舞社迎新晚會', text)
+
+        # 5. 測試關鍵字搜尋 (搜尋 '迎新')
+        response = self.client.get('/?q=迎新')
+        self.assertEqual(response.status_code, 200)
+        text = response.get_data(as_text=True)
+        self.assertIn('熱舞社迎新晚會', text)
+        self.assertNotIn('人工智慧導論', text)
+
+    def test_latest_event_notifications(self):
+        """測試最新活動通知功能 (F-05)"""
+        # 1. 建立並訂閱簡訊的學生 A，以及未訂閱的學生 B
+        student_a = User.create(username='sub_student_a', email='sub_a@test.com', password='password', role='student')
+        student_a.phone = '0900-111-222'
+        student_a.receive_sms = True
+        
+        student_b = User.create(username='sub_student_b', email='sub_b@test.com', password='password', role='student')
+        student_b.phone = '0900-333-444'
+        student_b.receive_sms = False
+        
+        db.session.commit()
+
+        # 2. 註冊並登入主辦單位帳號
+        User.create(username='org_notif', email='org_notif@test.com', password='password', role='organizer')
+        self.client.post('/auth/login', data={
+            'username': 'org_notif',
+            'password': 'password'
+        })
+
+        # 3. 發布新活動，確認發送簡訊給 1 位使用者
+        start_time = (datetime.utcnow() + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M')
+        end_time = (datetime.utcnow() + timedelta(days=2)).strftime('%Y-%m-%dT%H:%M')
+        
+        response = self.client.post('/event/publish', data={
+            'title': '測試發布與簡訊通知活動',
+            'category': 'lecture',
+            'start_time': start_time,
+            'end_time': end_time,
+            'location': '行政大樓七樓',
+            'description': '這是一場會觸發簡訊發送測試的講座！',
+            'registration_link': '',
+            'contact_info': ''
+        }, follow_redirects=True)
+
+        self.assertEqual(response.status_code, 200)
+        # 驗證 Flash 訊息中，通知了 1 位訂閱使用者
+        self.assertIn('活動發布成功！已發送簡訊通知 1 位訂閱使用者。', response.get_data(as_text=True))
+
 if __name__ == '__main__':
     unittest.main()
